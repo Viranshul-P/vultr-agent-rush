@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Secure Document Viewer (SIMULATION)</title>
+  <!--
+    SECURITY TEST FIXTURE — Airlock hackathon demo (Team Beyonders).
+    This page is a harmless simulation of a suspicious "pay via link" page, used to
+    demonstrate that the sandboxed browser contains it. It is deliberately inert:
+      * the sign-in form submits nowhere (preventDefault; no network, no storage);
+      * the "download" is the standard EICAR anti-virus TEST string, not malware;
+      * the busy-loop is bounded and only sets a counter the harness can read.
+    It impersonates no real brand and collects nothing.
+  -->
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #0b1220; color: #e6edf3; }
+    .wrap { max-width: 420px; margin: 56px auto; background: #121a2a; border: 1px solid #243044; border-radius: 12px; padding: 28px; }
+    h1 { font-size: 18px; } label { display: block; margin: 12px 0 4px; color: #9fb0c3; font-size: 13px; }
+    input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #0b1220; color: #e6edf3; box-sizing: border-box; }
+    button { margin-top: 16px; width: 100%; padding: 11px; border: 0; border-radius: 8px; background: #1d4ed8; color: #fff; font-weight: 700; }
+    .count { color: #f59e0b; font-weight: 700; } .sim { background: #f59e0b; color: #000; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+    footer { max-width: 420px; margin: 10px auto; color: #64748b; font-size: 12px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p><span class="sim">SIMULATION</span></p>
+    <h1>Secure Document Viewer</h1>
+    <p>This document expires in <span class="count" id="count">10:00</span>. Sign in to view and pay invoice KL-26-10-0957.</p>
+    <form id="f">
+      <label>Work email</label>
+      <input type="email" id="email" placeholder="you@company.com" autocomplete="username" />
+      <label>Password</label>
+      <input type="password" id="password" placeholder="Password" autocomplete="current-password" />
+      <button type="submit">Sign in &amp; view</button>
+    </form>
+  </div>
+  <footer>SIMULATION — Airlock hackathon demo. Inert test fixture; collects nothing; not a real service.</footer>
+  <script>
+    // Inert: never submits, never stores, never calls the network.
+    document.getElementById('f').addEventListener('submit', function (e) { e.preventDefault(); });
+
+    // Fake urgency counter (visual only).
+    let s = 600; const el = document.getElementById('count');
+    setInterval(function () { s = Math.max(0, s - 1); el.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }, 1000);
+
+    // Auto "download": the EICAR anti-virus TEST string (industry-standard, harmless).
+    window.addEventListener('load', function () {
+      try {
+        var eicar = 'X5O!P%@AP[4\\PZX54(P^)7CC)7}$' + 'EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*';
+        var blob = new Blob([eicar], { type: 'application/octet-stream' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = 'invoice_viewer.bin';
+        document.body.appendChild(a); a.click();
+      } catch (e) {}
+
+      // Bounded "busy" work so the sandbox CPU cap is observable; exposes a counter only.
+      var n = 0, end = Date.now() + 8000;
+      (function burn() {
+        var t = Date.now() + 40;
+        while (Date.now() < t) { n++; }
+        window.__airlockBurn = n;
+        if (Date.now() < end) setTimeout(burn, 0);
+      })();
+    });
+  </script>
+</body>
+</html>
