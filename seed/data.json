@@ -1,0 +1,77 @@
+{
+  "_note": "All companies are fictional. IBANs are standard documentation examples with valid checksums. {DOMAIN} is replaced at load time.",
+  "vendors": [
+    {
+      "id": "V-BRIGHTLINE",
+      "name": "Brightline Office Supply",
+      "aliases": ["Brightline Office Supply Ltd", "Brightline"],
+      "email_domains": ["brightline-supply.example"],
+      "web_hosts": ["brightline.{DOMAIN}", "brightline-supply.example"],
+      "phone": "+44 20 7946 0011",
+      "currency": "USD",
+      "bank": {"iban": "GB82WEST12345698765432", "account_name": "Brightline Office Supply Ltd"}
+    },
+    {
+      "id": "V-KESTREL",
+      "name": "Kestrel Logistics GmbH",
+      "aliases": ["Kestrel Logistics", "Kestrel"],
+      "email_domains": ["kestrel-logistics.example"],
+      "web_hosts": ["kestrel-logistics.example"],
+      "phone": "+49 40 555 0192",
+      "currency": "EUR",
+      "bank": {"iban": "DE89370400440532013000", "account_name": "Kestrel Logistics GmbH"}
+    },
+    {
+      "id": "V-ORCHARD",
+      "name": "Orchard Cloud Services Inc.",
+      "aliases": ["Orchard Cloud Services", "Orchard Cloud"],
+      "email_domains": ["orchardcloud.example"],
+      "web_hosts": ["orchardcloud.example"],
+      "phone": "+1 415 555 0148",
+      "currency": "USD",
+      "bank": {"account_number": "000123456789", "routing": "011000015", "account_name": "Orchard Cloud Services Inc."}
+    },
+    {
+      "id": "V-NORTHPEAK",
+      "name": "Northpeak Facilities SAS",
+      "aliases": ["Northpeak Facilities", "Northpeak"],
+      "email_domains": ["northpeak.example"],
+      "web_hosts": ["northpeak.example"],
+      "phone": "+33 1 70 55 01 23",
+      "currency": "EUR",
+      "bank": {"iban": "FR1420041010050500013M02606", "account_name": "Northpeak Facilities SAS"}
+    }
+  ],
+  "purchase_orders": [
+    {"po_number": "PO-1031", "vendor_id": "V-BRIGHTLINE", "currency": "USD", "status": "billed",
+     "lines": [{"description": "Whiteboard markers, pack of 12", "qty": "30", "unit_price": "14.20"},
+               {"description": "Desk organiser, bamboo", "qty": "25", "unit_price": "22.80"}]},
+    {"po_number": "PO-1042", "vendor_id": "V-BRIGHTLINE", "currency": "USD", "status": "open",
+     "lines": [{"description": "A4 copy paper 80gsm, box of 5 reams", "qty": "40", "unit_price": "38.50"},
+               {"description": "Ergonomic office chair", "qty": "6", "unit_price": "365.00"},
+               {"description": "Toner cartridge TN-760", "qty": "10", "unit_price": "56.00"}]},
+    {"po_number": "PO-2077", "vendor_id": "V-KESTREL", "currency": "EUR", "status": "open",
+     "lines": [{"description": "Freight Rotterdam - Hamburg, full truck load", "qty": "4", "unit_price": "2350.00"},
+               {"description": "Customs clearance", "qty": "4", "unit_price": "185.00"}]},
+    {"po_number": "PO-3310", "vendor_id": "V-ORCHARD", "currency": "USD", "status": "open",
+     "lines": [{"description": "Annual cloud hosting, reserved capacity", "qty": "1", "unit_price": "48000.00"}]},
+    {"po_number": "PO-4120", "vendor_id": "V-NORTHPEAK", "currency": "EUR", "status": "open",
+     "lines": [{"description": "Quarterly HVAC maintenance", "qty": "1", "unit_price": "6800.00"},
+               {"description": "Air filter replacement", "qty": "24", "unit_price": "100.00"}]},
+    {"po_number": "PO-5005", "vendor_id": "V-KESTREL", "currency": "EUR", "status": "open",
+     "lines": [{"description": "Pallet storage, October", "qty": "1", "unit_price": "3975.00"}]}
+  ],
+  "receipts": [
+    {"po_number": "PO-1031", "lines": [{"description": "Whiteboard markers, pack of 12", "qty": "30"}, {"description": "Desk organiser, bamboo", "qty": "25"}]},
+    {"po_number": "PO-1042", "lines": [{"description": "A4 copy paper 80gsm, box of 5 reams", "qty": "40"}, {"description": "Ergonomic office chair", "qty": "6"}, {"description": "Toner cartridge TN-760", "qty": "10"}]},
+    {"po_number": "PO-2077", "lines": [{"description": "Freight Rotterdam - Hamburg, full truck load", "qty": "4"}, {"description": "Customs clearance", "qty": "4"}]},
+    {"po_number": "PO-3310", "lines": [{"description": "Annual cloud hosting, reserved capacity", "qty": "1"}]},
+    {"po_number": "PO-4120", "lines": [{"description": "Quarterly HVAC maintenance", "qty": "1"}, {"description": "Air filter replacement", "qty": "24"}]},
+    {"po_number": "PO-5005", "lines": [{"description": "Pallet storage, October", "qty": "1"}]}
+  ],
+  "erp_history": [
+    {"vendor_id": "V-BRIGHTLINE", "invoice_number": "INV-2026-0397", "po_number": "PO-1031", "invoice_date": "2026-10-19",
+     "paid_on": "2026-10-26", "currency": "USD", "total": "1078.17"}
+  ],
+  "approval_threshold": "25000.00"
+}
