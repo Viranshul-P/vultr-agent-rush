@@ -1,0 +1,235 @@
+{
+  "run_date": "2026-11-01 21:23",
+  "n": 24,
+  "outcome_accuracy": 0.875,
+  "false_positive_rate": 0.182,
+  "latency_p50_ms": 1577,
+  "latency_p95_ms": 1734,
+  "cost_per_invoice_usd": 0.0,
+  "per_class": {
+    "clean": {
+      "recall": 1.0,
+      "precision": null,
+      "n": 9
+    },
+    "phishing_link": {
+      "recall": 0.0,
+      "precision": null,
+      "n": 1
+    },
+    "duplicate": {
+      "recall": 1.0,
+      "precision": null,
+      "n": 4
+    },
+    "injection": {
+      "recall": 1.0,
+      "precision": null,
+      "n": 4
+    },
+    "benign_link": {
+      "recall": 0.0,
+      "precision": null,
+      "n": 2
+    },
+    "bank_change": {
+      "recall": 1.0,
+      "precision": null,
+      "n": 4
+    }
+  },
+  "rows": [
+    {
+      "filename": "ev_00_clean.pdf",
+      "class": "clean",
+      "expected": "CLEAR/POSTED",
+      "status": "AWAIT_APPROVAL",
+      "ok": true,
+      "latency_ms": 1734
+    },
+    {
+      "filename": "ev_01_phishing_link.pdf",
+      "class": "phishing_link",
+      "expected": "QUARANTINE",
+      "status": "HELD",
+      "ok": false,
+      "latency_ms": 1719
+    },
+    {
+      "filename": "ev_02_clean.pdf",
+      "class": "clean",
+      "expected": "CLEAR/POSTED",
+      "status": "AWAIT_APPROVAL",
+      "ok": true,
+      "latency_ms": 1562
+    },
+    {
+      "filename": "ev_03_duplicate.pdf",
+      "class": "duplicate",
+      "expected": "BLOCK",
+      "status": "BLOCKED",
+      "ok": true,
+      "latency_ms": 1577
+    },
+    {
+      "filename": "ev_04_clean.pdf",
+      "class": "clean",
+      "expected": "CLEAR/POSTED",
+      "status": "AWAIT_APPROVAL",
+      "ok": true,
+      "latency_ms": 1577
+    },
+    {
+      "filename": "ev_05_clean.pdf",
+      "class": "clean",
+      "expected": "CLEAR/POSTED",
+      "status": "AWAIT_APPROVAL",
+      "ok": true,
+      "latency_ms": 1563
+    },
+    {
+      "filename": "ev_06_injection.pdf",
+      "class": "injection",
+      "expected": "QUARANTINE",
+      "status": "QUARANTINED",
+      "ok": true,
+      "latency_ms": 1561
+    },
+    {
+      "filename": "ev_07_duplicate.pdf",
+      "class": "duplicate",
+      "expected": "BLOCK",
+      "status": "BLOCKED",
+      "ok": true,
+      "latency_ms": 1686
+    },
+    {
+      "filename": "ev_08_clean.pdf",
+      "class": "clean",
+      "expected": "CLEAR/POSTED",
+      "status": "AWAIT_APPROVAL",
+      "ok": true,
+      "latency_ms": 1577
+    },
+    {
+      "filename": "ev_09_clean.pdf",
+      "class": "clean",
+      "expected": "CLEAR/POSTED",
+      "status": "AWAIT_APPROVAL",
+      "ok": true,
+      "latency_ms": 1547
+    },
+    {
+      "filename": "ev_10_benign_link.pdf",
+      "class": "benign_link",
+      "expected": "CLEAR/POSTED",
+      "status": "HELD",
+      "ok": false,
+      "latency_ms": 1594
+    },
+    {
+      "filename": "ev_11_clean.pdf",
+      "class": "clean",
+      "expected": "CLEAR/POSTED",
+      "status": "AWAIT_APPROVAL",
+      "ok": true,
+      "latency_ms": 1608
+    },
+    {
+      "filename": "ev_12_injection.pdf",
+      "class": "injection",
+      "expected": "QUARANTINE",
+      "status": "QUARANTINED",
+      "ok": true,
+      "latency_ms": 1577
+    },
+    {
+      "filename": "ev_13_clean.pdf",
+      "class": "clean",
+      "expected": "CLEAR/POSTED",
+      "status": "AWAIT_APPROVAL",
+      "ok": true,
+      "latency_ms": 1577
+    },
+    {
+      "filename": "ev_14_benign_link.pdf",
+      "class": "benign_link",
+      "expected": "CLEAR/POSTED",
+      "status": "HELD",
+      "ok": false,
+      "latency_ms": 1579
+    },
+    {
+      "filename": "ev_15_duplicate.pdf",
+      "class": "duplicate",
+      "expected": "BLOCK",
+      "status": "BLOCKED",
+      "ok": true,
+      "latency_ms": 1827
+    },
+    {
+      "filename": "ev_16_bank_change.pdf",
+      "class": "bank_change",
+      "expected": "BLOCK",
+      "status": "BLOCKED",
+      "ok": true,
+      "latency_ms": 1592
+    },
+    {
+      "filename": "ev_17_injection.pdf",
+      "class": "injection",
+      "expected": "QUARANTINE",
+      "status": "QUARANTINED",
+      "ok": true,
+      "latency_ms": 1625
+    },
+    {
+      "filename": "ev_18_bank_change.pdf",
+      "class": "bank_change",
+      "expected": "BLOCK",
+      "status": "BLOCKED",
+      "ok": true,
+      "latency_ms": 1577
+    },
+    {
+      "filename": "ev_19_bank_change.pdf",
+      "class": "bank_change",
+      "expected": "BLOCK",
+      "status": "BLOCKED",
+      "ok": true,
+      "latency_ms": 1750
+    },
+    {
+      "filename": "ev_20_duplicate.pdf",
+      "class": "duplicate",
+      "expected": "BLOCK",
+      "status": "BLOCKED",
+      "ok": true,
+      "latency_ms": 1563
+    },
+    {
+      "filename": "ev_21_injection.pdf",
+      "class": "injection",
+      "expected": "QUARANTINE",
+      "status": "QUARANTINED",
+      "ok": true,
+      "latency_ms": 1577
+    },
+    {
+      "filename": "ev_22_clean.pdf",
+      "class": "clean",
+      "expected": "CLEAR/POSTED",
+      "status": "AWAIT_APPROVAL",
+      "ok": true,
+      "latency_ms": 1577
+    },
+    {
+      "filename": "ev_23_bank_change.pdf",
+      "class": "bank_change",
+      "expected": "BLOCK",
+      "status": "BLOCKED",
+      "ok": true,
+      "latency_ms": 1561
+    }
+  ]
+}
