@@ -1,185 +1,102 @@
-# Vultr: Agent Rush Hackathon — Team Beyonders
+# Airlock — a sandboxed accounts-payable agent
 
-> **Status:** Starts 3 Nov 2026 · **Submissions close 8 Nov 2026, 6:00 PM EST = 9 Nov 2026, 4:30 AM IST**
-> Info collected 1 Nov 2026 from the lablab.ai event page. Confirm the final schedule on the [live page](https://lablab.ai/ai-hackathons/vultr-hackathon/live).
+> **Team Beyonders** · Vultr: Agent Rush Hackathon · Challenge 1 (Blast Radius Zero)
 
----
+**Airlock opens every invoice inside a disposable Vultr sandbox. A malicious invoice can fool the AI, but it can't reach your money, your secrets, or your servers.**
 
-## Team
+Accounts-payable teams open hundreds of untrusted invoices from strangers every day — exactly how invoice fraud and prompt-injection attacks get in. Business email compromise caused **$3.05B** in reported losses in 2025 (FBI IC3), and **76%** of organisations faced payments fraud in 2025 (AFP). As AP teams add AI agents, an invoice becomes a way to attack the agent itself. Airlock treats every invoice as hostile and does all the risky work — parsing, validating, opening links — inside throwaway sandboxes, with a human approving any payment.
 
-| Member | GitHub |
-|---|---|
-| Viranshul | [@Viranshul-P](https://github.com/Viranshul-P) |
-| Priyanshu Doshi | [@Priyanshu-byte-coder](https://github.com/Priyanshu-byte-coder) |
-| Kuldeep Goklani | [@Kuldeeep18](https://github.com/Kuldeeep18) |
+- **Live demo:** https://app.beyonders-airlock.duckdns.org  *(set after deploy)*
+- **Demo video:** _link_ · **Slides:** _link_
+- **Containment moment in the video:** ~1:40
 
 ---
 
-## Quick links
+## What it does (real executed work, not described)
 
-| What | Link |
-|---|---|
-| Event page | https://lablab.ai/ai-hackathons/vultr-hackathon |
-| Live page (schedule/deadline) | https://lablab.ai/ai-hackathons/vultr-hackathon/live |
-| lablab Discord | https://discord.gg/lablabai |
-| lablab rule book | https://lablab.ai/hackathon-rules |
-| Hackathon guidelines | https://lablab.ai/ai-articles/hackathon-guidelines |
-| Getting started guide | https://lablab.ai/getting-started-guide |
-| Vultr Community showcase (optional) | https://community.vultr.com/e/vultr-agent-rush-hackathon |
-| Twitch | https://www.twitch.tv/lablabai |
-
----
-
-## About
-
-**"Build AI agents that do real work, safely sandboxed on Vultr."**
-
-- **Organisers:** lablab.ai × Vultr (with NativelyAI)
-- **Format:** Hybrid. Online build **3–8 Nov 2026**, plus an optional on-site day on **8 Nov** at Pierpont Place, 163 W Pierpont Ave, Salt Lake City, UT (travel not covered).
-- **Team size:** 1–6
-- **Cost:** Free. Open to all experience levels.
-- **Submission:** **Must be submitted on lablab.ai** to be judged. Vultr Community is optional extra exposure.
-- **Originality:** Submissions must be original and MIT-compliant. Prize payout can take up to 90 days.
-
----
-
-## Schedule
-
-| Event | EST | IST |
+| Step | What happens | Where |
 |---|---|---|
-| Kick-off | Tue 3 Nov, 11:00 AM | Tue 3 Nov, 9:30 PM |
-| Discord Q&A | Tue 3 Nov, 12:00 PM | Tue 3 Nov, 10:30 PM |
-| On-site doors open (SLC) | Sun 8 Nov, 11:00 AM | Sun 8 Nov, 9:30 PM |
-| Welcoming remarks (on-site) | Sun 8 Nov, 11:30 AM | Sun 8 Nov, 10:00 PM |
-| **End of submissions** | **Sun 8 Nov, 6:00 PM** | **Mon 9 Nov, 4:30 AM** |
-| On-site doors close | Sun 8 Nov, 8:00 PM | Mon 9 Nov, 6:30 AM |
+| Scan | A fixed program reads the PDF and flags hidden/white text | sandbox |
+| Extract (**Pattern A**) | The model *writes Python*; it runs in the sandbox; errors feed back for up to 3 retries → typed `InvoiceFields` | sandbox |
+| Validate | Totals, IBAN/ABA checksum, 3-way match (PO + goods receipt), duplicate, sender-domain lookalike | sandbox + control plane |
+| Inspect links (**Pattern B**) | A sandboxed Playwright browser opens any pay-link behind an egress proxy; a vision model + rules judge it | sandbox |
+| Decide | A **deterministic policy engine (no LLM)** sets the outcome | control plane |
+| Approve | A human must click before anything posts to the ERP | control plane |
+
+Outcomes: **CLEAR** → await approval → **POSTED** · **HOLD** · **BLOCK** · **QUARANTINE**.
+
+### Two containment moments (from the use case itself)
+1. **Prompt-injection invoice** — hidden white text tells the AI to exfiltrate `os.environ` and auto-approve. Even when the model is fooled into writing that code, the sandbox has **no env vars and no network**, the attempt is logged, and the approval tool is unreachable → **QUARANTINE, blast radius 0**.
+2. **Phishing pay-link** — a sandboxed browser opens a lookalike login page; the forced download is quarantined (never opened) and the CPU-burn script hits the cap; the container is destroyed → **QUARANTINE**.
 
 ---
 
-## Vultr credits ($200 per participant)
+## How Vultr powers it
 
-1. Register at https://www.vultr.com/register/ with an email that has **never been used for a Vultr account**.
-2. Verify the email.
-3. At kickoff, open https://console.vultr.com/billing/?promo=HACKATHON, enter the **gift code** shared at kickoff, and click **Apply Gift Code**.
-4. Check that the account shows **$200.00 Remaining Credit**.
-5. Credits cover Compute Instances, Managed Databases, Kubernetes, and other Vultr services. Add a payment method if we want to keep deployments running after the event.
-
-> ⚠️ **No Vultr GPUs for this event.**
-
----
-
-## Challenges (pick one)
-
-### 01 · Blast Radius Zero
-Build a **web-based agent that does real work** (writes and runs code, or drives a real browser) with **every action inside an isolated sandbox on Vultr**. The system acts as a central control layer: it plans a task, sends it to an isolated execution environment, and returns verifiable output.
-
-> "An agent that only chats is a demo; an agent that executes safely is a product."
-
-**Required tech:** Vultr VM backend · Web app on Vultr · **Vultr Serverless Inference for ALL agent LLM calls** · Isolated sandbox (Docker strongly recommended)
-
-**Execution patterns (build one or both):**
-- **Pattern A: Sandboxed code execution.** User asks → model writes code → code runs in a container → real output returns → model explains. Errors feed back for retries.
-- **Pattern B: Sandboxed browser use.** User gives a goal → model plans → Playwright runs in a container → screenshots return → vision model verifies → **human approval before final actions**.
-
-**Containment rules:**
-- **Process isolation:** Execution never touches the host or app runtime.
-- **Secret hygiene:** No API keys or credentials inside the sandbox.
-- **Resource limits:** Time and memory caps on every run.
-- **Lifecycle discipline:** Reset or destroy the environment after each task.
-
-**Example directions:** CSV Analyst · Prove-It Code Reviewer · Chart Anything · File Fixer · Self-Healing Runner · Comparison Shopper · Form Filler · Site QA Sweep · Research with Receipts · Page Watcher
-
-**Submission expectations:** GitHub repo with setup docs · Vultr VM backend deployment · public demo URL · recorded demo video · clear architecture and use-case explanation · **at least one containment moment shown in the video**
-
-### 02 · Powering the Future of Work
-Build and deploy an **enterprise AI solution** that coordinates realistic multi-step workflows. It should be a real platform or operational workflow, not a one-off demo.
-
-**Required tech:** Vultr VM backend · Web deployment on Vultr · (Serverless Inference optional)
-
-**Focus areas:**
-- **Sales Ops:** qualify leads, research prospects, update CRM, draft outreach, follow up
-- **Finance & Accounting:** process invoices, reconcile transactions, flag anomalies, payment follow-ups
-- **HR & Recruitment:** screen candidates, schedule interviews, onboarding, employee workflows
-- **Customer Support:** resolve tickets across systems, investigate, act, escalate to humans
-- **Procurement:** monitor needs, compare vendors, request quotes, track orders, chase delays
-
-**Product expectations:** accessible from a public web browser · real product-style UX with clear user flows · Vultr as the central backend for planning, workflows, and operations · platform thinking
-
----
-
-## What to submit (on lablab.ai)
-
-| Section | Items |
+| Vultr service | Role |
 |---|---|
-| 📋 Basic info | Project title · Short description · Long description · Technology & category tags |
-| 📸 Presentation | Cover image · **Video presentation** · **Slide presentation** |
-| 💻 Hosting & repo | **Public GitHub repository** · Demo application platform · **Application URL** |
+| **Cloud Compute (VM-1)** | Control plane: web app + API + policy + approvals |
+| **Cloud Compute (VM-2)** | Isolated sandbox host (gVisor); holds **no secrets** |
+| **Serverless Inference** | **Every** agent LLM call (`https://api.vultrinference.com/v1`): coder, planner, vision, safety |
+| **VPC + Firewall Groups** | Private control↔sandbox link; runner never public |
+| **Object Storage** | Uploads, screenshots, signed evidence receipts |
+| **Container Registry** | Sandbox images, pinned by digest |
+| **Managed PostgreSQL** | Application data |
 
-**Vultr-specific README requirements** (no separate report needed):
-- Which Vultr services and infrastructure we used
-- Backend/deployment architecture and how Vultr powers it
-- The agent's use case and **how it executes real tasks**
-- (Challenge 1) Demo video shows **at least one containment moment**
+### Architecture
+```
+Judge/clerk ──HTTPS──> VM-1 (Caddy, web, API, policy, approvals, evidence)
+                          │  Serverless Inference (LLM)   Object Storage   Managed PG
+                          │  VPC (only VM-1 → VM-2:8700, bearer token)
+                          ▼
+                        VM-2  runner ──> gVisor sandboxes
+                          ├─ code:    --network none, read-only, no env, caps dropped, mem/cpu/pid/time caps, --rm
+                          └─ browser: internal network → egress proxy (denies private ranges incl. 169.254.169.254, logs all)
+```
 
-> ⚠️ This repo is **private** for now. Make it **public** before submitting.
+### Containment (how each rule is met, and proved)
+- **Process isolation** — gVisor user-space kernel on a separate VM; non-root; `cap-drop ALL`; read-only rootfs; no docker socket in sandboxes.
+- **Secret hygiene** — zero env vars passed; **no API keys exist on the sandbox VM** (LLM calls happen only on VM-1).
+- **Resource limits** — memory, CPU, pids, output and wall-clock caps on every run.
+- **Lifecycle** — one container per run, destroyed after; a sweeper kills orphans.
+- **Proof** — 11 one-click **Red Team drills** (`/red-team`) run real attacks (host-escape, env dump, metadata SSRF, fork/memory bombs, exfiltration, browser→private-range) and check containment. Every invoice gets an **Ed25519-signed evidence receipt**.
 
----
-
-## Judging criteria
-1. **Application of Technology:** How well the chosen model(s) are integrated
-2. **Presentation:** Clarity and effectiveness of the pitch
-3. **Business Value:** Impact and practical value for business areas
-4. **Originality:** Uniqueness and creativity, including demonstrated behaviours
-
----
-
-## Prizes — up to $15,000
-
-| Place | Cash | Vultr credits |
-|---|---|---|
-| 🥇 1st | $5,000 | + $3,000 |
-| 🥈 2nd | $3,000 | + $1,000 |
-| 🥉 3rd | $1,000 | + $1,000 |
-
-Plus an on-site raffle in SLC (PS5, AirPods 5, Razer DeathAdder V3 HyperSpeed) for in-person attendees only.
+**Dual-LLM design:** the model that reads the raw invoice has **no tools** (a successful injection has nothing to call); the model that writes the summary **never sees the raw document**; the policy engine, in plain code, owns every decision, and **no model can trigger a payment**.
 
 ---
 
-## Tech resources
+## Run it locally (no Vultr, no API key, no Docker)
 
-**Core Vultr**
-- Serverless Inference (OpenAI-compatible) base URL: `https://api.vultrinference.com/v1`
-- Inference docs: https://docs.vultr.com/products/serverless/inference/provisioning
-- Live model list: https://api.vultrinference.com/v1/models
-- Vultr API: https://www.vultr.com/api/
+A mock LLM and an in-process **dev-only** runner let the whole pipeline run on a laptop. The dev runner is **not a sandbox** and refuses to start without `RUNNER_ALLOW_UNSAFE_DEV=1`.
 
-**Agent sandboxing**
-- Vultr sandboxing guide: https://docs.vultr.com/how-to-set-up-agent-sandboxing-on-vultr-cloud-compute
-- OpenSandbox: https://github.com/opensandbox-group/OpenSandbox
-- gVisor: https://gvisor.dev/
-- E2B: https://github.com/e2b-dev/e2b
-- Microsandbox
-- (Challenge 1 may use the Vultr API to spin up throwaway instances.)
+```bash
+# backend tests (policy, checks, runner, full end-to-end pipeline)
+cd api && uv sync && uv run pytest -q          # 41 passing
+cd ../runner && uv sync && uv run pytest -q     # 11 passing
 
-**App deployment**
-- Next.js + Supabase on Vultr: https://docs.vultr.com/how-to-deploy-a-nextjs-application-with-vultr-supabase-marketplace-app · [video](https://www.youtube.com/watch?v=icJzcsP59Ks)
-- Coolify on Vultr: https://docs.vultr.com/how-to-deploy-an-application-with-vultr-coolify-marketplace-app · [video](https://www.youtube.com/watch?v=P0wZ2LYufGU)
+# run the API with mock LLM + in-process runner, then open the web app
+cd ../api
+DATABASE_URL="sqlite:///../var/airlock.db" STORAGE_DIR=../var/store \
+RUNNER_URL=inprocess RUNNER_TOKEN=$(python -c "print('x'*40)") RUNNER_ALLOW_UNSAFE_DEV=1 \
+RUNS_ROOT="$PWD/../var/runs" LLM_MODE=mock DOMAIN=localhost \
+PYTHONPATH="../sandbox-images/py-sandbox:../seed:../runner:." \
+uv run uvicorn airlock_api.main:app --port 8000
 
----
+cd ../web && npm install && npm run dev        # http://localhost:5173
+```
 
-## Reuse note
-Vultr infra and Serverless Inference are mandatory (for Challenge 1), so this build is standalone and won't share well with our other hackathons.
+## Deploy on Vultr
+See [`deploy/`](deploy/) and the runbook in [`docs/04-build-guide.md`](docs/04-build-guide.md) (Part 2):
+provision VM-1, VM-2, VPC, firewall, Object Storage, Container Registry, Managed PG; `deploy/setup-sandbox-vm.sh` installs Docker + gVisor; then `docker compose` with the two compose files. Free HTTPS via DuckDNS + Caddy.
 
----
+## Evaluation
+`eval/generate.py` builds a labelled, seed-aligned invoice set; `eval/run.py` scores a live instance and writes a JSON the **Metrics** page reads. Latest local run (mock LLM, browser disabled): core fraud classes (injection, duplicate, bank-change, clean) **100%**; link cases require the sandboxed browser on the VM.
 
-## Pre-submission checklist
-- [ ] Each member: new Vultr account + $200 gift code applied at kickoff
-- [ ] Team registered on lablab.ai + joined Discord
-- [ ] Challenge picked: ☐ Blast Radius Zero ☐ Future of Work
-- [ ] Backend on a Vultr VM; web app deployed on Vultr; public URL works
-- [ ] (C1) All LLM calls go through Vultr Serverless Inference
-- [ ] (C1) Sandbox: isolation, no secrets inside, time/memory caps, destroyed after each task
-- [ ] README: Vultr services, architecture diagram, how the agent executes real tasks
-- [ ] Video (with a containment moment for C1) + slide deck + cover image
-- [ ] Repo **public**
-- [ ] Submitted on **lablab.ai** before **9 Nov, 4:30 AM IST**
+## Repo layout
+`api/` control plane · `runner/` sandbox runner · `sandbox-images/` gVisor images + `airlock_checks` · `egress-proxy/` · `demo-sites/` · `seed/` · `eval/` · `web/` · `deploy/` · `docs/` plans · `handoff.md`.
+
+## Safety note
+All vendors, invoices and demo sites are **fictional**. IBANs are standard documentation examples. The "malicious" demo content is inert: injections are harmless hidden text, the simulated suspicious page submits nowhere, the "download" is the standard EICAR anti-virus **test** string, and the CPU loop is bounded. Pages are clearly marked **SIMULATION**.
+
+## License
+MIT — see [LICENSE](LICENSE).
