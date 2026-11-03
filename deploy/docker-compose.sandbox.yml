@@ -1,0 +1,33 @@
+# VM-2 sandbox host. The runner orchestrates gVisor sandboxes; it is NOT exposed
+# publicly (the firewall group lets only VM-1 reach :8700 over the VPC).
+services:
+  runner:
+    build: { context: .., dockerfile: runner/Dockerfile }
+    env_file: [.env.sandbox]
+    # The runner needs the Docker socket to launch sibling sandbox containers.
+    # Sandboxes themselves NEVER get the socket (drill D1 proves it).
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Same host path inside the container, so bind-mounts into sandboxes resolve.
+      - ${RUNS_ROOT}:${RUNS_ROOT}
+      - ${PROXY_LOG_DIR}:${PROXY_LOG_DIR}
+    ports:
+      - "${RUNNER_BIND}:8700"   # bind to the VPC private IP only
+    command: uvicorn airlock_runner.main:app --host 0.0.0.0 --port 8700
+    restart: unless-stopped
+
+  egress-proxy:
+    build: { context: ../egress-proxy }
+    environment:
+      PROXY_LOG_DIR: ${PROXY_LOG_DIR}
+      PROXY_DENY_CIDRS: ${PROXY_DENY_CIDRS}
+    networks: [default, sbx-browser]
+    volumes:
+      - ${PROXY_LOG_DIR}:/logs
+    restart: unless-stopped
+
+networks:
+  # Browser sandboxes attach here; it has no gateway, so the proxy is the only way out.
+  sbx-browser:
+    internal: true
+    name: sbx-browser

@@ -1,0 +1,32 @@
+# VM-1 control plane: web (built), API, Caddy. Postgres optional (use Managed PG via DATABASE_URL).
+services:
+  api:
+    build: { context: .., dockerfile: api/Dockerfile }
+    env_file: [.env.control]
+    environment:
+      STORAGE_DIR: /srv/storage
+    volumes:
+      - storage:/srv/storage
+    expose: ["8000"]
+    command: uvicorn airlock_api.main:app --host 0.0.0.0 --port 8000
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.8-alpine
+    depends_on: [api]
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../web/dist:/srv/web:ro
+      - ../demo-sites:/srv/demo-sites:ro
+      - storage:/srv/storage:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  storage:
+  caddy_data:
+  caddy_config:

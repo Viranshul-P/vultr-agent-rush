@@ -1,0 +1,33 @@
+# Caddy on VM-1. Automatic HTTPS via Let's Encrypt for the DuckDNS hostnames.
+# Set an email for ACME:
+{
+	email you@example.com
+}
+
+app.{$DOMAIN} {
+	handle /api/* {
+		reverse_proxy api:8000 {
+			flush_interval -1
+		}
+	}
+	# serve run artifacts (screenshots) referenced by the UI
+	handle /runs/* {
+		root * /srv/storage
+		file_server
+	}
+	handle {
+		root * /srv/web
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+brightline.{$DOMAIN} {
+	root * /srv/demo-sites/brightline
+	file_server
+}
+
+filecourier-secure.{$DOMAIN} {
+	root * /srv/demo-sites/filecourier
+	file_server
+}
