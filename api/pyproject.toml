@@ -1,0 +1,37 @@
+[project]
+name = "airlock-api"
+version = "0.1.0"
+description = "Airlock control plane: orchestrator, policy engine, approvals, evidence"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn[standard]>=0.32,<1",
+    "sqlmodel>=0.0.22,<0.1",
+    "psycopg[binary]>=3.2,<4",
+    "httpx>=0.27,<1",
+    "openai>=1.54,<3",
+    "sse-starlette>=2.1,<3",
+    "cryptography>=43",
+    "boto3>=1.35,<2",
+    "python-multipart>=0.0.12",
+    "reportlab>=4.2,<5",
+    "rapidfuzz>=3.10,<4",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    # sandbox libs, so the dev-only subprocess runner and scan tests work locally
+    "pdfplumber>=0.11,<0.12",
+    "pypdf>=5,<6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+pythonpath = [".", "../sandbox-images/py-sandbox", "../seed"]
+
+[tool.uv]
+package = false
