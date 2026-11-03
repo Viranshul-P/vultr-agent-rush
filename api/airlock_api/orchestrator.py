@@ -15,7 +15,7 @@ import uuid
 
 from sqlmodel import select
 
-from . import detectors, evidence, llm, prompts, runner_client
+from . import detectors, evidence, links, llm, prompts, runner_client
 from .config import settings
 from .db import Invoice, Run, session, utcnow
 from .events import bus
@@ -274,9 +274,11 @@ def _inspect_links(inv_id, fields: InvoiceFields, vendors) -> list[BrowserVerdic
         extra = res.get("extra", {})
         screenshots = [a["b64"] for a in res.get("artifacts", []) if a["name"].endswith(".png") and a.get("b64")]
         # If the browser couldn't actually load the page, fail safe: mark unavailable (policy HOLDs).
-        if res.get("exit_code") not in (0, None) or (extra.get("error") and not extra.get("final_url")):
+        # This includes proxy denies / HTTP errors, which load as an error page with no harness error.
+        why = links.unavailable_reason(res, url)
+        if why:
             verdict = BrowserVerdict(url=url, final_url=extra.get("final_url", "") or url, source="unavailable",
-                                     reasons=[f"link could not be inspected: {extra.get('error', 'browser unavailable')}"[:200]])
+                                     reasons=[f"link could not be inspected: {why}"[:200]])
         else:
             verdict = _vision_verdict(inv_id, url, extra, known_hosts, screenshots)
         verdict.run_id = res["run_id"]
