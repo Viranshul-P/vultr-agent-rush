@@ -74,6 +74,23 @@ def test_extraction_helpers_on_two_column_layouts():
     assert T.after(doc, "Missing label") is None
 
 
+def test_after_skips_bilingual_label_pair():
+    """'Rechnungsnr. / Invoice No.: X': matching the German label must not return '/'.
+    Seen live: golden invoice #2 extracted invoice_number='/' and po_number='/' -> held by R8."""
+    from airlock_checks import text as T
+
+    doc = ("Rechnungsnr. / Invoice No.: EV-2026-1021\nDatum / Date: 22.10.2026\n"
+           "Bestellnr. / PO: PO-2077\nFällig / Due: 21.11.2026\n")
+    assert T.after(doc, "Rechnungsnr.", token=True) == "EV-2026-1021"
+    assert T.after(doc, ["Bestellnr.", "PO"], token=True) == "PO-2077"
+    assert T.iso_date(T.after(doc, "Datum", token=True)) == "2026-10-22"
+    assert T.after(doc, "Bestellnr.") == "PO-2077"
+    # the English half still works, and ordinary values containing '/' are untouched
+    assert T.after(doc, "Invoice No.", token=True) == "EV-2026-1021"
+    assert T.after("Ref: A/B 12\n", "Ref") == "A/B 12"
+    assert T.after("Route: / \n", "Route") is None  # a bare separator is not a value
+
+
 def test_money_extraction_helpers():
     from decimal import Decimal as D
 
