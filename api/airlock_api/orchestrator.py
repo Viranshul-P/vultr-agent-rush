@@ -194,7 +194,7 @@ def _extract(inv_id, pdf_bytes, scan: ScanResult):
     prev_err = None
     for attempt in range(1, settings.max_code_attempts + 1):
         sys_prompt = prompts.CODER_EXTRACT_SYS
-        text = scan.text if attempt == 1 else scan.text
+        text = scan.text
         if prev_err:
             feedback = f"\n\nYour previous program failed. stderr tail:\n{prev_err[-3000:]}\nReturn a corrected full program."
             task_a = task + feedback
