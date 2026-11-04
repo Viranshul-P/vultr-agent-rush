@@ -117,13 +117,18 @@ For the eval only, the upload limit on VM-1 was temporarily raised (`UPLOADS_PER
 
 ## 8. 2026-11-04, later (Viranshul, with Claude Code)
 
-Tests: **API 66 passing** (was 55), runner 11, web build clean. **Not yet deployed to the live VMs** (needs SSH access to them).
+Tests: **API 66 passing** (was 55), runner 11, web build clean.
 
-Checked on a temporary test deployment with real Vultr models and gVisor (not the live site): drills 11/11 pass;
-golden invoices 5/6 on two runs. Run 1 missed #2 (the `text.after` bug below, now fixed). Run 2 had #2 correct but
-#4 (bank change) came back QUARANTINED instead of BLOCKED: the injection classifier scored its "please update your
-records" text at exactly the 0.60 threshold (0.20 on run 1). Payment is stopped either way; whether to change the
-threshold is open.
+**Deployed to the live site** (both VMs) on 2026-11-04. Code extracted in place, env files untouched; VM-2 rebuilt
+`airlock/py-sandbox:local` (the runner was not restarted); VM-1 rebuilt the API and web (Caddy not restarted).
+Rollback: `~/airlock-backup-20261104-pre-fix.tgz` on each VM, plus image tags `deploy-api:20261104-pre-fix` (VM-1)
+and `airlock/py-sandbox:20261104-pre-fix` (VM-2).
+
+Checked on https://app.beyonders.duckdns.org after the deploy: health OK; **drills 11/11**; golden invoices **5/6**.
+#2 (bilingual) is now CLEAR. #4 (bank change) came back QUARANTINED instead of BLOCKED: the injection classifier
+scores its "please note our new bank details … kindly update your records" text at exactly the 0.60 threshold (seen
+on 2 of 3 runs, also on a test deployment before this deploy; no hidden text or metadata involved, so the detector
+change here doesn't touch it). Payment is stopped either way; whether to change the threshold is open.
 
 | Change | Why | Where |
 |---|---|---|

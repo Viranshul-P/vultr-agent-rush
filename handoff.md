@@ -34,7 +34,8 @@ cd web && npm install && npm run build       # builds clean
 The full local stack command is in the README ("Run it locally").
 
 ## Left to do ⏳ (in order)
-0. **Deploy the CHANGES.md §8 changes to the live VMs.** Needs SSH access (the original deploy key isn't available; a new key must be added through the Vultr console). Ship code with `git archive` and extract in place; keep the env files already on the VMs. VM-2: rebuild `py-sandbox` (the `text.after` fix lives in the image) and re-pin `IMAGE_PY`. VM-1: rebuild the API and web.
+0. ✅ CHANGES.md §8 deployed to the live VMs (drills 11/11, golden 5/6; see §8 for #4 and rollback).
+   **Open decision:** invoice #4 hits the injection classifier's 0.60 threshold exactly (QUARANTINE instead of BLOCK).
 1. **Re-run the eval** on the varied-injection set (`python eval/generate.py --domain beyonders.duckdns.org`, then `eval/run.py --base https://app.beyonders.duckdns.org --note "<deployed commit>"`). It measures commit `4f14b3e` (IBAN/vendor fix) and the §8 changes. The run uploads 40 invoices: either raise `UPLOADS_PER_HOUR_PER_IP` on VM-1 for the run and set it back to 10, or leave it and let `run.py` wait out the limit (about 4 hours). Never quote a number the eval didn't produce.
 1b. **Real model prices** in `api/airlock_api/pricing.py` (currently placeholders, so "cost per invoice" is an estimate). Take them from the Vultr console / pricing page.
 2. **Snapshot both VMs** before recording the video, and write down how to roll back.
@@ -46,7 +47,7 @@ The full local stack command is in the README ("Run it locally").
 8. **After submitting:** keep the demo live through judging (daily `/api/health` check). Don't touch production during the buffer.
 
 ## Secrets
-Secrets live only in the gitignored root `.env`, `deploy/.env.control` (VM-1) and `deploy/.env.sandbox` (VM-2). Never commit, paste or screenshot them. The only secret on VM-2 is `RUNNER_TOKEN`. SSH to the VMs uses `~/.ssh/airlock_ed25519`; VM-2 is reached only through VM-1.
+Secrets live only in the gitignored root `.env`, `deploy/.env.control` (VM-1) and `deploy/.env.sandbox` (VM-2). Never commit, paste or screenshot them. The only secret on VM-2 is `RUNNER_TOKEN`. SSH to the VMs uses `~/.ssh/airlock_ed25519` as user `airlock` (two keys are authorized: `airlock-deploy` and `airlock-viranshul-laptop`); VM-2 is reached only through VM-1 (`ProxyJump`).
 
 ## Known limitations (by design)
 - Locally, Pattern B (the browser) needs the VM, so link invoices HOLD via the R12 fail-safe in mock mode.
