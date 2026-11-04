@@ -83,7 +83,7 @@ A mock LLM and an in-process **dev-only** runner let the whole pipeline run on a
 
 ```bash
 # backend tests (policy, checks, runner, full end-to-end pipeline)
-cd api && uv sync && uv run pytest -q          # 55 passing
+cd api && uv sync && uv run pytest -q          # 66 passing
 cd ../runner && uv sync && uv run pytest -q     # 11 passing
 
 # run the API with mock LLM + in-process runner, then open the web app
@@ -122,7 +122,7 @@ All changes made while deploying are listed in [`CHANGES.md`](CHANGES.md).
 | Clean invoices passed | 10/16. The 6 misses were held or blocked (fail-safe, never paid) |
 | False-positive rate (clean + benign) | 33% (6/18) |
 | Latency per invoice | p50 19 s · p95 60 s |
-| LLM cost per invoice | $0.0048 |
+| LLM cost per invoice | $0.0048 (estimate: real token counts × placeholder per-model prices in `api/airlock_api/pricing.py`) |
 
 The false positives are extraction slips on clean invoices: an address line taken as the vendor name, or the IBAN's short last group dropped. A fix (checksum-validated `bank.find_iban` plus vendor-name guidance) is deployed but **not yet measured**. Don't quote a number for it until a new eval file exists. The earlier "100%" figure came from a mock-LLM local run and is not a live result.
 

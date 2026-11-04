@@ -112,3 +112,28 @@ For the eval only, the upload limit on VM-1 was temporarily raised (`UPLOADS_PER
 - Optionally push the sandbox images to the registry and pin them by registry digest.
 - Snapshot both VMs before recording the demo video. Then the video, slides and cover image.
 - The Vultr API key shown in a session log on 2026-11-04 has been rotated. Optionally restrict the new key's access list to known IPs.
+
+---
+
+## 8. 2026-11-04, later (Viranshul, with Claude Code)
+
+Tests: **API 66 passing** (was 55), runner 11, web build clean. **Not yet deployed to the live VMs** (needs SSH access to them).
+
+Checked on a temporary test deployment with real Vultr models and gVisor (not the live site): drills 11/11 pass;
+golden invoices 5/6 on two runs. Run 1 missed #2 (the `text.after` bug below, now fixed). Run 2 had #2 correct but
+#4 (bank change) came back QUARANTINED instead of BLOCKED: the injection classifier scored its "please update your
+records" text at exactly the 0.60 threshold (0.20 on run 1). Payment is stopped either way; whether to change the
+threshold is open.
+
+| Change | Why | Where |
+|---|---|---|
+| **Fix: injections hidden only in PDF metadata were never quarantined.** The keyword detector found them, but quarantine also needs the safety model or classifier to agree, and those models were only shown hidden text or the page body, never metadata. Instruction-like metadata fields are now included in what the models read; standard Title/Author/Producer fields are not. | Found by the new varied-injection eval set. Reproduced with a failing test before fixing. | `api/airlock_api/detectors.py`, `api/tests/test_detectors.py` |
+| **Eval injections are now placed 5 different ways** (white text, tiny text, off-page text, PDF metadata, a visible note) instead of all white text. Each label records its `variant`. `--injection-mix white` rebuilds the original set; every non-injection invoice is identical in both mixes (verified), so runs stay comparable. | "6/6 injections caught" only measured one hiding trick. The visible-note variant can only be caught by the AI classifiers. | `eval/generate.py`, `seed/invoice_pdf.py` (new `hidden_style`; the default is unchanged and the 6 golden PDFs render identically) |
+| **Eval records why each invoice got its outcome** (rules fired, failed checks, key extracted fields, detector reasons, errors), plus a `miss_breakdown`. Precision is now computed (per outcome; it was always empty), along with `attacks_caught` and drill results for the Metrics page's "drills passed" tile. | The 6 clean-invoice misses in the first eval can't be diagnosed from its results file. | `eval/run.py`, `api/tests/test_eval_scoring.py` |
+| **Eval waits out the upload rate limit** (HTTP 429) instead of skipping invoices. Skipped invoices, if any, are listed in the result. | A skipped upload used to shrink the run silently. Also makes a run possible without raising `UPLOADS_PER_HOUR_PER_IP` (slow: about 4 h). | `eval/run.py` |
+| Invoice page: for each inspected link, the quarantined download's name, sha256 and size; the page's CPU busy-loop counter next to the sandbox's CPU/memory limit; proxy denials; container lifetime. | Containment moment #2 needs these on screen. Previously only "N download(s) quarantined" was shown. | `web/src/pages/InvoiceDetail.tsx` |
+| README: the cost-per-invoice figure is labelled as an estimate (real token counts, placeholder prices). | `api/airlock_api/pricing.py` prices are placeholders. | `README.md` |
+| **Fix: `text.after` returned `/` on bilingual labels.** On `Rechnungsnr. / Invoice No.: EV-…` the German label matched and the value came back as `/`, so golden invoice #2 got `invoice_number="/"`, `po_number="/"` and was held by R8. The helper now skips a `/ <other label>:` part and never returns a bare separator. | Seen in a golden run on the test deployment; reproduced with a failing test. | `sandbox-images/py-sandbox/airlock_checks/text.py`, `api/tests/test_checks.py` |
+| `setup-sandbox-vm.sh`: `gpg --dearmor` gets `--batch --yes` | Without a TTY (script piped over ssh) gpg fails and the script stops before installing gVisor. | `deploy/setup-sandbox-vm.sh` |
+| Removed a no-op line in the extraction loop. | | `api/airlock_api/orchestrator.py` |
+| `handoff.md` rewritten for the live deployment (it still said "nothing is committed" and used the old domain). | | `handoff.md` |
