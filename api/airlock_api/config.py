@@ -31,6 +31,8 @@ class Settings:
     llm_max_retries: int = field(default_factory=lambda: int(_env("LLM_MAX_RETRIES", "1")))
     llm_max_tokens: int = field(default_factory=lambda: int(_env("LLM_MAX_TOKENS", "6000")))
     llm_reasoning_effort: str = field(default_factory=lambda: _env("LLM_REASONING_EFFORT", "low"))  # "" disables
+    llm_coder_reasoning_effort: str = field(default_factory=lambda: _env("LLM_CODER_REASONING_EFFORT", "medium"))
+    llm_coder_max_tokens: int = field(default_factory=lambda: int(_env("LLM_CODER_MAX_TOKENS", "14000")))
 
     database_url: str = field(default_factory=lambda: _env("DATABASE_URL", f"sqlite:///{(ROOT / 'var' / 'airlock.db').as_posix()}"))
     storage_dir: str = field(default_factory=lambda: _env("STORAGE_DIR", str(ROOT / "var" / "storage")))

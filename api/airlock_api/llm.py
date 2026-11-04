@@ -62,8 +62,13 @@ def _chat(model, messages, *, role, invoice_id, json_mode=False, temperature=Non
               # Vultr's models are reasoning models: unbounded, they "think" for 10k+ tokens and
               # time out with no answer. Low effort + a hard cap keeps every call bounded.
               "max_tokens": settings.llm_max_tokens}
-    if settings.llm_reasoning_effort:
-        kwargs["extra_body"] = {"reasoning_effort": settings.llm_reasoning_effort}
+    # Code-writing needs more thought than classification/summaries; everything else stays fast.
+    coder = role.startswith("coder")
+    effort = settings.llm_coder_reasoning_effort if coder else settings.llm_reasoning_effort
+    if coder:
+        kwargs["max_tokens"] = settings.llm_coder_max_tokens
+    if effort:
+        kwargs["extra_body"] = {"reasoning_effort": effort}
     if json_mode:
         kwargs["response_format"] = {"type": "json_object"}
     t0 = time.monotonic()

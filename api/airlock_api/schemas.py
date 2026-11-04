@@ -58,6 +58,26 @@ class InvoiceFields(_Base):
     links: Annotated[list[Annotated[str, Field(max_length=2000)]], Field(max_length=10)] = []
     notes: Annotated[str, Field(max_length=500)] = ""
 
+    @field_validator("currency", mode="before")
+    @classmethod
+    def _upper_currency(cls, v):
+        return v.strip().upper() if isinstance(v, str) else v
+
+    @field_validator("tax", mode="before")
+    @classmethod
+    def _tax_default(cls, v):
+        return Decimal("0") if v is None else v
+
+    @field_validator("notes", mode="before")
+    @classmethod
+    def _notes_default(cls, v):
+        return "" if v is None else v
+
+    @field_validator("links", mode="before")
+    @classmethod
+    def _links_default(cls, v):
+        return [] if v is None else v
+
     @field_validator("links")
     @classmethod
     def _http_only(cls, v):
