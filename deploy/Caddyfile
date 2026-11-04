@@ -1,8 +1,6 @@
 # Caddy on VM-1. Automatic HTTPS via Let's Encrypt for the DuckDNS hostnames.
-# Set an email for ACME:
-{
-	email you@example.com
-}
+# ACME contact email is optional for Let's Encrypt; a placeholder like you@example.com
+# is REJECTED. To get expiry notices, add a global block:  { email team@yourdomain }
 
 app.{$DOMAIN} {
 	handle /api/* {
