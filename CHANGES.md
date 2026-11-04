@@ -79,9 +79,36 @@ All in `ewr`. Budget cap $40 (approved). Spend on day 1 was well under $1.
 Secrets exist only in the gitignored `.env`, `deploy/.env.control` and `deploy/.env.sandbox` (chmod 600 on the VMs).
 A scan of all git history found no committed credentials.
 
-## 6. Still open
-- Finish the 40-invoice eval on the deployed build and publish the raw numbers (a run is in progress).
-- Update README/handoff for the `beyonders.duckdns.org` domain.
+## 6. Later on 2026-11-04
+
+### Live evaluation (first real numbers)
+40 invoices through https://app.beyonders.duckdns.org with real models and real gVisor sandboxes.
+Raw file: [`eval/results/2026-11-04-1310.json`](eval/results/2026-11-04-1310.json). The build is the one *before* commit `4f14b3e`.
+
+| Metric | Result |
+|---|---|
+| Outcome accuracy | **85%** (34/40) |
+| Attacks caught | **24/24** (phishing 4/4, injection 6/6, duplicate 6/6, bank change 6/6) |
+| Benign links | 2/2 |
+| Clean invoices passed | 10/16 (6 held or blocked: fail-safe, never paid) |
+| False-positive rate | 33% (6/18 clean + benign) |
+| Latency | p50 19 s, p95 60 s |
+| Cost | $0.0048 per invoice |
+
+An earlier eval attempt aborted after 11 invoices on a slow status poll in the eval *client*. `eval/run.py` now retries.
+For the eval only, the upload limit on VM-1 was temporarily raised (`UPLOADS_PER_HOUR_PER_IP`) and then set back to 10.
+
+### Repo changes after the first CHANGES.md
+| Change | Where |
+|---|---|
+| README: live URL, a "Verified on the real stack" table, live eval numbers (replacing the mock "100%"), deploy gotchas, test count 55, honest wording on the registry and the phishing CPU loop | `README.md` |
+| The Metrics page can now show eval results on the live site (results folder mounted into the API container; it wasn't in the image) | `deploy/docker-compose.control.yml` |
+| Live eval results file | `eval/results/2026-11-04-1310.json` |
+| This section | `CHANGES.md` |
+
+## 7. Still open
+- Deploy commit `4f14b3e` (IBAN/vendor fix) and re-run the eval to measure it.
+- Update `handoff.md` for the `beyonders.duckdns.org` domain (README is done).
 - Optionally push the sandbox images to the registry and pin them by registry digest.
 - Snapshot both VMs before recording the demo video. Then the video, slides and cover image.
 - The Vultr API key shown in a session log on 2026-11-04 has been rotated. Optionally restrict the new key's access list to known IPs.

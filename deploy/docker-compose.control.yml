@@ -7,6 +7,8 @@ services:
       STORAGE_DIR: /srv/storage
     volumes:
       - storage:/srv/storage
+      # The Metrics page reads the latest eval JSON from here (not baked into the image).
+      - ../eval/results:/app/eval/results:ro
     expose: ["8000"]
     # Only Caddy can reach the API (no published port), so trust its X-Forwarded-For;
     # otherwise every visitor shares Caddy's IP and one per-IP upload quota.
