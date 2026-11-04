@@ -30,7 +30,7 @@ def _openai():
         from openai import OpenAI
 
         _client = OpenAI(base_url=settings.inference_base_url, api_key=settings.inference_api_key,
-                         timeout=settings.llm_timeout_s, max_retries=2)
+                         timeout=settings.llm_timeout_s, max_retries=settings.llm_max_retries)
     return _client
 
 
@@ -43,23 +43,44 @@ def _record(invoice_id, role, model, usage, latency_ms, ok=True):
         s.commit()
 
 
+class EmptyCompletion(RuntimeError):
+    """The model spent its whole budget (e.g. hidden reasoning) and returned no content."""
+
+
+def _create(kwargs):
+    resp = _openai().chat.completions.create(**kwargs)
+    choice = resp.choices[0]
+    if not (choice.message.content or "").strip() or choice.finish_reason == "length":
+        raise EmptyCompletion(f"{kwargs['model']}: finish={choice.finish_reason}, "
+                              f"{getattr(resp.usage, 'completion_tokens', '?')} tokens, no usable content")
+    return resp
+
+
 def _chat(model, messages, *, role, invoice_id, json_mode=False, temperature=None):
-    t0 = time.monotonic()
     kwargs = {"model": model, "messages": messages,
-              "temperature": settings.llm_temperature if temperature is None else temperature}
+              "temperature": settings.llm_temperature if temperature is None else temperature,
+              # Vultr's models are reasoning models: unbounded, they "think" for 10k+ tokens and
+              # time out with no answer. Low effort + a hard cap keeps every call bounded.
+              "max_tokens": settings.llm_max_tokens}
+    if settings.llm_reasoning_effort:
+        kwargs["extra_body"] = {"reasoning_effort": settings.llm_reasoning_effort}
     if json_mode:
         kwargs["response_format"] = {"type": "json_object"}
+    t0 = time.monotonic()
     try:
-        resp = _openai().chat.completions.create(**kwargs)
+        resp = _create(kwargs)
     except Exception:
-        if model != settings.model_fallback:
-            kwargs["model"] = settings.model_fallback
-            resp = _openai().chat.completions.create(**kwargs)
-            model = settings.model_fallback
-        else:
+        _record(invoice_id, role, model, None, int((time.monotonic() - t0) * 1000), ok=False)
+        if model == settings.model_fallback:
             raise
-    latency = int((time.monotonic() - t0) * 1000)
-    _record(invoice_id, role, model, getattr(resp, "usage", None), latency)
+        model = kwargs["model"] = settings.model_fallback
+        t0 = time.monotonic()
+        try:
+            resp = _create(kwargs)
+        except Exception:
+            _record(invoice_id, role, model, None, int((time.monotonic() - t0) * 1000), ok=False)
+            raise
+    _record(invoice_id, role, model, getattr(resp, "usage", None), int((time.monotonic() - t0) * 1000))
     return resp.choices[0].message.content or ""
 
 

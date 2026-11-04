@@ -28,6 +28,9 @@ class Settings:
     model_fallback: str = field(default_factory=lambda: _env("MODEL_FALLBACK", "deepseek-v4.1-flash-1017"))
     llm_temperature: float = field(default_factory=lambda: float(_env("LLM_TEMPERATURE", "0.1")))
     llm_timeout_s: float = field(default_factory=lambda: float(_env("LLM_TIMEOUT_S", "90")))
+    llm_max_retries: int = field(default_factory=lambda: int(_env("LLM_MAX_RETRIES", "1")))
+    llm_max_tokens: int = field(default_factory=lambda: int(_env("LLM_MAX_TOKENS", "6000")))
+    llm_reasoning_effort: str = field(default_factory=lambda: _env("LLM_REASONING_EFFORT", "low"))  # "" disables
 
     database_url: str = field(default_factory=lambda: _env("DATABASE_URL", f"sqlite:///{(ROOT / 'var' / 'airlock.db').as_posix()}"))
     storage_dir: str = field(default_factory=lambda: _env("STORAGE_DIR", str(ROOT / "var" / "storage")))
