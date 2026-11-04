@@ -12,6 +12,10 @@ API_REF = r"""Exact airlock_checks API (use these signatures; do not guess other
   money.parse(value, locale_hint=None) -> Decimal   # returns a Decimal itself (no .amount);
                                              # locale_hint='eu' for 1.234,56 style
   money.q2(d) -> Decimal (2 dp) ; money.close(a, b, tol="0.01") -> bool
+  money.amount_after(doc, labels, locale_hint=None, default=None) -> Decimal|None
+        # LAST amount on the line holding a label; skips rates like "(19%)"; "Total" won't match "Subtotal"
+  money.line_items(doc, locale_hint=None) -> [{description, qty, unit_price, amount}]
+        # rows "<desc> <qty> <unit> <amount>" kept only when qty*unit == amount
   bank.iban(s) -> {"valid": bool, "country", "bank_code", "normalized", "reason"}
   bank.aba(s) -> bool ; bank.same_account(a: dict, b: dict) -> bool
   domains.of(email_or_url) -> str ; domains.host_matches(host, known) -> bool
@@ -33,7 +37,12 @@ Skeleton (adapt the labels to the document you are shown):
   doc = pdf.text("/input/invoice.pdf")
   inv_no = text.after(doc, ["Invoice Number", "Invoice No."], token=True)
   inv_date = text.iso_date(text.after(doc, ["Invoice Date", "Date"], token=True))
-  total = money.parse(text.find(doc, r"Total\s+[A-Z]{3}\s+([\d.,]+)"), locale_hint=None)
+  eu = "eu" if re.search(r"\d\.\d{3},\d{2}", doc) else None     # 1.234,56 style numbers
+  lines = money.line_items(doc, eu)
+  subtotal = money.amount_after(doc, ["Subtotal", "Zwischensumme"], eu)
+  tax = money.amount_after(doc, ["VAT", "Sales tax", "MwSt", "Tax"], eu, default=0)
+  total = money.amount_after(doc, ["Total", "Gesamt"], eu)
+  currency = text.find(doc, r"Total\s+([A-Z]{3})")
   io.write_json("/out/result.json", {...all schema fields...})"""
 
 CODER_EXTRACT_SYS = """You write ONE Python 3.12 program that runs in an isolated sandbox.

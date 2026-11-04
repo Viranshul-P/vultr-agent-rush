@@ -57,3 +57,48 @@ def q2(d) -> Decimal:
 
 def close(a, b, tol: str = "0.01") -> bool:
     return abs(parse(a) - parse(b)) <= Decimal(tol)
+
+
+# ------------------------------------------------------------ extraction helpers
+def amount_after(doc: str, labels, locale_hint: str | None = None, default=None):
+    """The LAST amount on the first line containing one of `labels` (e.g. 'Subtotal',
+    ['VAT', 'Sales tax']). Taking the last number skips rates like '(19%)'."""
+    import re as _re
+
+    for label in ([labels] if isinstance(labels, str) else list(labels)):
+        lab = _re.compile(r"(?<![A-Za-z])" + _re.escape(label), _re.I)  # 'Total' must not match 'Subtotal'
+        for line in (doc or "").splitlines():
+            hit = lab.search(line)
+            if hit:
+                rest = line[hit.end():]
+                rest = _re.sub(r"\(?\d+(?:[.,]\d+)?\s*%\)?", " ", rest)  # drop percentages
+                nums = [n for n in _re.findall(r"\d[\d.,]*\d|\d", rest)]
+                if nums:
+                    try:
+                        return parse(nums[-1], locale_hint)
+                    except Exception:  # noqa: BLE001
+                        continue
+    return default
+
+
+def line_items(doc: str, locale_hint: str | None = None, tol: str = "0.02") -> list[dict]:
+    """Rows shaped '<description> <qty> <unit price> <amount>' whose qty * unit == amount.
+
+    The arithmetic check is what rejects look-alike lines (IBANs, phone numbers, totals)."""
+    import re as _re
+
+    rows = []
+    pat = _re.compile(r"^(?P<desc>.*?\S)\s+(?P<qty>\d+(?:[.,]\d+)?)\s+(?P<unit>\d[\d.,]*)\s+(?P<amt>\d[\d.,]*)\s*$")
+    for line in (doc or "").splitlines():
+        m = pat.match(line.strip())
+        if not m:
+            continue
+        try:
+            qty = parse(m["qty"], locale_hint)
+            unit = parse(m["unit"], locale_hint)
+            amt = parse(m["amt"], locale_hint)
+        except Exception:  # noqa: BLE001
+            continue
+        if qty > 0 and close(qty * unit, amt, tol):
+            rows.append({"description": m["desc"].strip(), "qty": qty, "unit_price": unit, "amount": amt})
+    return rows

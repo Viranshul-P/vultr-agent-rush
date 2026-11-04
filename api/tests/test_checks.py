@@ -72,3 +72,21 @@ def test_extraction_helpers_on_two_column_layouts():
     assert T.find(doc, r"Brightline Office Supply Ltd") == "Brightline Office Supply Ltd"  # no group: no IndexError
     assert T.find(doc, r"nope (\d+)", default="-") == "-"
     assert T.after(doc, "Missing label") is None
+
+
+def test_money_extraction_helpers():
+    from decimal import Decimal as D
+
+    from airlock_checks import money as M
+
+    doc = ("Description Qty Unit Price Amount\n"
+           "Freight Rotterdam - Hamburg, full truck load 4 2.350,00 9.400,00\n"
+           "Customs clearance 4 185,00 740,00\n"
+           "IBAN: DE89 3704 0044 0532 0130 00\n"
+           "Zwischensumme / Subtotal 10.140,00\nMwSt. / VAT (19%) 1.926,60\nGesamt / Total EUR 12.066,60\n")
+    rows = M.line_items(doc, "eu")
+    assert [r["amount"] for r in rows] == [D("9400.00"), D("740.00")]  # IBAN line rejected by arithmetic
+    assert M.amount_after(doc, "Subtotal", "eu") == D("10140.00")
+    assert M.amount_after(doc, "VAT", "eu") == D("1926.60")            # not 191926.60
+    assert M.amount_after(doc, "Total", "eu") == D("12066.60")         # not the Subtotal line
+    assert M.amount_after(doc, "Shipping", "eu", default=0) == 0
