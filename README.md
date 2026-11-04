@@ -124,7 +124,7 @@ All changes made while deploying are listed in [`CHANGES.md`](CHANGES.md).
 | Latency per invoice | p50 19 s · p95 60 s |
 | LLM cost per invoice | $0.0048 |
 
-The false positives are extraction slips on clean invoices: an address line taken as the vendor name, or the IBAN's short last group dropped. A fix (checksum-validated `bank.find_iban` plus vendor-name guidance) is committed and **not yet measured**. Don't quote a number for it until a new eval file exists. The earlier "100%" figure came from a mock-LLM local run and is not a live result.
+The false positives are extraction slips on clean invoices: an address line taken as the vendor name, or the IBAN's short last group dropped. A fix (checksum-validated `bank.find_iban` plus vendor-name guidance) is deployed but **not yet measured**. Don't quote a number for it until a new eval file exists. The earlier "100%" figure came from a mock-LLM local run and is not a live result.
 
 ## Repo layout
 `api/` control plane · `runner/` sandbox runner · `sandbox-images/` gVisor images + `airlock_checks` · `egress-proxy/` · `demo-sites/` · `seed/` · `eval/` · `web/` · `deploy/` · `docs/` plans · `handoff.md`.

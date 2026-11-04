@@ -107,7 +107,7 @@ For the eval only, the upload limit on VM-1 was temporarily raised (`UPLOADS_PER
 | This section | `CHANGES.md` |
 
 ## 7. Still open
-- Deploy commit `4f14b3e` (IBAN/vendor fix) and re-run the eval to measure it.
+- Commit `4f14b3e` (IBAN/vendor fix) is **deployed on both VMs**. Re-run the eval to measure it.
 - Update `handoff.md` for the `beyonders.duckdns.org` domain (README is done).
 - Optionally push the sandbox images to the registry and pin them by registry digest.
 - Snapshot both VMs before recording the demo video. Then the video, slides and cover image.
