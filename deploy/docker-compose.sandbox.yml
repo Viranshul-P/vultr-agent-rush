@@ -19,7 +19,7 @@ services:
   egress-proxy:
     build: { context: ../egress-proxy }
     environment:
-      PROXY_LOG_DIR: ${PROXY_LOG_DIR}
+      PROXY_LOG_DIR: /logs   # container path; host ${PROXY_LOG_DIR} is mounted here
       PROXY_DENY_CIDRS: ${PROXY_DENY_CIDRS}
     networks:
       default: {}
