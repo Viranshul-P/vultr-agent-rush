@@ -55,3 +55,20 @@ def test_fuzzy():
     assert text.fuzzy("Brightline Office Supply Ltd", "Brightline Office Supply") > 0.8
     assert text.ratio("INV-2026-0397-R", "INV-2026-0397") >= 0.9
     assert text.ratio("INV-2026-0412", "INV-2026-0397") < 0.9
+
+
+def test_extraction_helpers_on_two_column_layouts():
+    from airlock_checks import text as T
+
+    doc = ("London E14 9AB, United Kingdom Invoice Number: INV-2026-0412\n"
+           "ap@x.example Invoice Date: 2026-10-28\nDatum / Date: 27.10.2026 rechnung@k.example\n"
+           "Account name: Brightline Office Supply Ltd\nTotal USD 4,643.93\n")
+    assert T.after(doc, ["Invoice No.", "Invoice Number"], token=True) == "INV-2026-0412"
+    assert T.iso_date(T.after(doc, "Invoice Date", token=True)) == "2026-10-28"
+    assert T.iso_date(T.after(doc, "Date", token=True)) in ("2026-10-28", "2026-10-27")
+    assert T.iso_date("27.10.2026") == "2026-10-27"
+    assert T.after(doc, "Account name") == "Brightline Office Supply Ltd"
+    assert T.find(doc, r"Total\s+([A-Z]{3})") == "USD"
+    assert T.find(doc, r"Brightline Office Supply Ltd") == "Brightline Office Supply Ltd"  # no group: no IndexError
+    assert T.find(doc, r"nope (\d+)", default="-") == "-"
+    assert T.after(doc, "Missing label") is None

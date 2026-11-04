@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 
-API_REF = """Exact airlock_checks API (use these signatures; do not guess others):
+API_REF = r"""Exact airlock_checks API (use these signatures; do not guess others):
   from airlock_checks import pdf, money, bank, domains, text, io
   pdf.text(path) -> str                      # full text of all pages
   pdf.tables(path) -> list[list[list[str|None]]]
@@ -17,10 +17,24 @@ API_REF = """Exact airlock_checks API (use these signatures; do not guess others
   domains.of(email_or_url) -> str ; domains.host_matches(host, known) -> bool
   domains.lookalike(host, known) -> float (0..1)
   text.norm(s) -> str ; text.fuzzy(a, b) -> float (0..1)
+  text.after(doc, labels, default=None, token=False) -> str|None
+        # value after a label ANYWHERE on a line (layouts are two-column, so labels are often
+        # mid-line). labels may be a list of alternatives, e.g. ["Invoice Number", "Invoice No."].
+        # token=True returns only the first word: use it for ids, dates, PO numbers.
+  text.find(doc, pattern, default=None) -> str|None   # never raises; group(1) if present
+  text.iso_date(s, default=None) -> "YYYY-MM-DD"|None # handles 2026-10-28, 27.10.2026, 28 Oct 2026
   io.write_json(path, obj)   # ALWAYS use this to write output: it serialises Decimal and dates
   io.read_json(path)
 Coding rules: re.search may return None, so check before .group(); only call .group(1) when the
-pattern has a capture group; convert nothing to float (keep Decimal, write with io.write_json)."""
+pattern has a capture group; convert nothing to float (keep Decimal, write with io.write_json).
+Prefer text.after / text.find over hand-rolled regex. Keep each field to its value only (an account
+name is a name, not the rest of the line). Never lower-case the whole document before extracting.
+Skeleton (adapt the labels to the document you are shown):
+  doc = pdf.text("/input/invoice.pdf")
+  inv_no = text.after(doc, ["Invoice Number", "Invoice No."], token=True)
+  inv_date = text.iso_date(text.after(doc, ["Invoice Date", "Date"], token=True))
+  total = money.parse(text.find(doc, r"Total\s+[A-Z]{3}\s+([\d.,]+)"), locale_hint=None)
+  io.write_json("/out/result.json", {...all schema fields...})"""
 
 CODER_EXTRACT_SYS = """You write ONE Python 3.12 program that runs in an isolated sandbox.
 Sandbox facts: no network, no environment variables, read-only filesystem except /out and /tmp.
