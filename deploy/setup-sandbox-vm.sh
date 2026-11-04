@@ -27,4 +27,10 @@ sudo ufw allow 22/tcp
 sudo ufw allow from "$VM1_PRIVATE_IP" to any port 8700 proto tcp
 sudo ufw --force enable
 
+echo "== sandbox host dirs =="
+# Run dirs are created per run by the runner (root). The egress proxy's mitmdump drops to
+# uid 1000 inside its image, so it must own the proxy log dir or every log write fails.
+sudo install -d -m 0755 /srv/airlock-runs
+sudo install -d -m 0750 -o 1000 -g 1000 /srv/airlock-proxy-logs
+
 echo "Next: fill deploy/.env.sandbox, build+push sandbox images, then: docker compose -f deploy/docker-compose.sandbox.yml up -d --build"

@@ -1,0 +1,236 @@
+{
+ "recorded_at": "2026-11-04",
+ "host": "Vultr vc2-2c-4gb ewr (airlock-sandbox), Ubuntu 24.04, no /dev/kvm",
+ "runtime": "runsc version release-20261102.0",
+ "gvisor_platform": "systrap (default; no KVM)",
+ "drills": [
+  {
+   "id": "D1",
+   "title": "Host escape probes",
+   "passed": true,
+   "actual": "docker.sock=False, mount rc=32, uid=65534, secret-like env=none, kernel=Linux version 4.19.0-gvisor #1 SMP Sun Jan 10 15:06:54 PST 2",
+   "runs": [
+    {
+     "tier": "T1-gvisor",
+     "container_id": "1f79e86ede0d",
+     "exit_code": 0,
+     "killed_reason": null,
+     "duration_ms": 385,
+     "created_at": "2026-11-04T06:08:50.474+00:00",
+     "destroyed_at": "2026-11-04T06:08:51.004+00:00"
+    }
+   ]
+  },
+  {
+   "id": "D2",
+   "title": "Write outside /out",
+   "passed": true,
+   "actual": "all writes outside /out blocked; /out writable",
+   "runs": [
+    {
+     "tier": "T1-gvisor",
+     "container_id": "95e89b6ca0f0",
+     "exit_code": 0,
+     "killed_reason": null,
+     "duration_ms": 273,
+     "created_at": "2026-11-04T06:08:51.075+00:00",
+     "destroyed_at": "2026-11-04T06:08:51.478+00:00"
+    }
+   ]
+  },
+  {
+   "id": "D3",
+   "title": "Environment dump",
+   "passed": true,
+   "actual": "11 env vars, all from the image (GPG_KEY, HOME, HOSTNAME, LANG, MPLCONFIGDIR, PATH\u2026); secret-like: none",
+   "runs": [
+    {
+     "tier": "T1-gvisor",
+     "container_id": "ef89d9fef293",
+     "exit_code": 0,
+     "killed_reason": null,
+     "duration_ms": 266,
+     "created_at": "2026-11-04T06:08:51.548+00:00",
+     "destroyed_at": "2026-11-04T06:08:51.956+00:00"
+    }
+   ]
+  },
+  {
+   "id": "D4",
+   "title": "Credential hunt",
+   "passed": true,
+   "actual": "no credential files or directories reachable",
+   "runs": [
+    {
+     "tier": "T1-gvisor",
+     "container_id": "776a29fe165c",
+     "exit_code": 0,
+     "killed_reason": null,
+     "duration_ms": 282,
+     "created_at": "2026-11-04T06:08:52.019+00:00",
+     "destroyed_at": "2026-11-04T06:08:52.439+00:00"
+    }
+   ]
+  },
+  {
+   "id": "D5",
+   "title": "Cloud metadata SSRF",
+   "passed": true,
+   "actual": "unreachable: URLError: <urlopen error [Errno 101] Network is unreachable>",
+   "runs": [
+    {
+     "tier": "T1-gvisor",
+     "container_id": "b509f31e699b",
+     "exit_code": 0,
+     "killed_reason": null,
+     "duration_ms": 571,
+     "created_at": "2026-11-04T06:08:52.499+00:00",
+     "destroyed_at": "2026-11-04T06:08:53.211+00:00"
+    }
+   ]
+  },
+  {
+   "id": "D6",
+   "title": "Fork bomb",
+   "passed": true,
+   "actual": "fork bomb stopped after 63 processes (pids cap)",
+   "runs": [
+    {
+     "tier": "T1-gvisor",
+     "container_id": "b6285c567929",
+     "exit_code": 0,
+     "killed_reason": null,
+     "duration_ms": 1663,
+     "created_at": "2026-11-04T06:08:53.271+00:00",
+     "destroyed_at": "2026-11-04T06:08:55.069+00:00"
+    }
+   ]
+  },
+  {
+   "id": "D7",
+   "title": "Memory bomb",
+   "passed": true,
+   "actual": "killed_reason=oom; last output: allocated 450 MB",
+   "runs": [
+    {
+     "tier": "T1-gvisor",
+     "container_id": "12045add4036",
+     "exit_code": 137,
+     "killed_reason": "oom",
+     "duration_ms": 1034,
+     "created_at": "2026-11-04T06:08:55.138+00:00",
+     "destroyed_at": "2026-11-04T06:08:56.427+00:00"
+    }
+   ]
+  },
+  {
+   "id": "D8",
+   "title": "Infinite loop",
+   "passed": true,
+   "actual": "killed_reason=timeout after 5261 ms",
+   "runs": [
+    {
+     "tier": "T1-gvisor",
+     "container_id": "30035fb32464",
+     "exit_code": 137,
+     "killed_reason": "timeout",
+     "duration_ms": 5261,
+     "created_at": "2026-11-04T06:08:56.492+00:00",
+     "destroyed_at": "2026-11-04T06:09:01.903+00:00"
+    }
+   ]
+  },
+  {
+   "id": "D9",
+   "title": "Persistence between runs",
+   "passed": true,
+   "actual": "run 2 saw /tmp flag=False, /out flag=False",
+   "runs": [
+    {
+     "tier": "T1-gvisor",
+     "container_id": "d903390e4e6a",
+     "exit_code": 0,
+     "killed_reason": null,
+     "duration_ms": 317,
+     "created_at": "2026-11-04T06:09:01.980+00:00",
+     "destroyed_at": "2026-11-04T06:09:02.463+00:00"
+    },
+    {
+     "tier": "T1-gvisor",
+     "container_id": "9f7c9c922313",
+     "exit_code": 0,
+     "killed_reason": null,
+     "duration_ms": 337,
+     "created_at": "2026-11-04T06:09:02.464+00:00",
+     "destroyed_at": "2026-11-04T06:09:02.951+00:00"
+    }
+   ]
+  },
+  {
+   "id": "D10a",
+   "title": "Data exfiltration",
+   "passed": true,
+   "actual": "dns: failed: gaierror; tcp_1.1.1.1: failed: OSError: [Errno 101] Network is unreachable; http_post: failed: URLError",
+   "runs": [
+    {
+     "tier": "T1-gvisor",
+     "container_id": "7a9cedcb5f69",
+     "exit_code": 0,
+     "killed_reason": null,
+     "duration_ms": 840,
+     "created_at": "2026-11-04T06:09:03.035+00:00",
+     "destroyed_at": "2026-11-04T06:09:04.037+00:00"
+    }
+   ]
+  },
+  {
+   "id": "D10b",
+   "title": "Browser to private network",
+   "passed": true,
+   "actual": "http://169.254.169.254/v1.json: denied by proxy; http://10.10.0.4:8700/v1/health: denied by proxy",
+   "runs": [
+    {
+     "tier": "T1-gvisor",
+     "container_id": "760283f9ed7d",
+     "exit_code": 0,
+     "killed_reason": null,
+     "duration_ms": 11876,
+     "created_at": "2026-11-04T06:10:33.340+00:00",
+     "destroyed_at": "2026-11-04T06:10:45.387+00:00"
+    },
+    {
+     "tier": "T1-gvisor",
+     "container_id": "1d94fb2ccc5d",
+     "exit_code": 0,
+     "killed_reason": null,
+     "duration_ms": 11957,
+     "created_at": "2026-11-04T06:10:45.389+00:00",
+     "destroyed_at": "2026-11-04T06:10:57.491+00:00"
+    }
+   ]
+  }
+ ],
+ "chromium_check": {
+  "url": "https://example.com/",
+  "tier": "T1-gvisor",
+  "exit_code": 0,
+  "final_url": "https://example.com/",
+  "screenshots": [
+   "after-5s.png",
+   "landing.png"
+  ],
+  "proxy_log": [
+   [
+    "example.com",
+    "allow"
+   ],
+   [
+    "example.com",
+    "allow"
+   ]
+  ],
+  "created_at": "2026-11-04T06:11:18.689+00:00",
+  "destroyed_at": "2026-11-04T06:11:31.168+00:00"
+ },
+ "summary": "11/11 drills passed"
+}
