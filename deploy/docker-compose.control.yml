@@ -8,7 +8,9 @@ services:
     volumes:
       - storage:/srv/storage
     expose: ["8000"]
-    command: uvicorn airlock_api.main:app --host 0.0.0.0 --port 8000
+    # Only Caddy can reach the API (no published port), so trust its X-Forwarded-For;
+    # otherwise every visitor shares Caddy's IP and one per-IP upload quota.
+    command: uvicorn airlock_api.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips="*"
     restart: unless-stopped
 
   caddy:
