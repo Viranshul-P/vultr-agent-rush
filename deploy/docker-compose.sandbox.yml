@@ -21,7 +21,11 @@ services:
     environment:
       PROXY_LOG_DIR: ${PROXY_LOG_DIR}
       PROXY_DENY_CIDRS: ${PROXY_DENY_CIDRS}
-    networks: [default, sbx-browser]
+    networks:
+      default: {}
+      # Fixed IP: gVisor's netstack bypasses Docker's embedded DNS (127.0.0.11 is an
+      # iptables DNAT), so browser sandboxes reach the proxy by IP via PROXY_URL.
+      sbx-browser: { ipv4_address: 172.30.0.10 }
     volumes:
       - ${PROXY_LOG_DIR}:/logs
     restart: unless-stopped
@@ -31,3 +35,5 @@ networks:
   sbx-browser:
     internal: true
     name: sbx-browser
+    ipam:
+      config: [{ subnet: 172.30.0.0/24 }]

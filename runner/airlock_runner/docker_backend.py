@@ -70,6 +70,11 @@ class DockerBackend:
                 "user": user, "caps": [], "no_new_privileges": True, "seccomp": "gVisor + docker default",
                 "host": "dedicated sandbox VM (no secrets)", "docker_socket": "not mounted"}
 
+    def _host_pids_cap(self, guest_pids: int) -> int:
+        if self.runtime == "runsc":
+            return max(512, guest_pids * 8)
+        return guest_pids
+
     def _hardening(self, limits, run_id: str, kind: str) -> dict:
         return dict(
             runtime=self.runtime,
@@ -79,9 +84,14 @@ class DockerBackend:
             mem_limit=f"{limits.memory_mb}m",
             memswap_limit=f"{limits.memory_mb}m",
             nano_cpus=int(limits.cpus * 1e9),
-            pids_limit=limits.pids,
+            # The process cap is enforced INSIDE the sandbox with RLIMIT_NPROC (gVisor's Sentry
+            # returns EAGAIN, just like Linux). Under runsc/systrap the host pids cgroup also counts
+            # gVisor's own helper threads, so a host cap equal to the guest cap makes the Sentry
+            # panic after ~20 guest forks. Keep the host cgroup as a backstop with headroom.
+            pids_limit=self._host_pids_cap(limits.pids),
             ulimits=[Ulimit(name="fsize", soft=50_000_000, hard=50_000_000),
-                     Ulimit(name="nofile", soft=256, hard=256)],
+                     Ulimit(name="nofile", soft=256, hard=256),
+                     Ulimit(name="nproc", soft=limits.pids, hard=limits.pids)],
             environment={},
             labels={"airlock": "sbx", "airlock.run_id": run_id, "airlock.kind": kind},
             name=f"sbx-{run_id}",
