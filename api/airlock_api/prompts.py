@@ -17,6 +17,8 @@ API_REF = r"""Exact airlock_checks API (use these signatures; do not guess other
   money.line_items(doc, locale_hint=None) -> [{description, qty, unit_price, amount}]
         # rows "<desc> <qty> <unit> <amount>" kept only when qty*unit == amount
   bank.iban(s) -> {"valid": bool, "country", "bank_code", "normalized", "reason"}
+  bank.find_iban(doc) -> str|None   # ALWAYS use this for the IBAN: handles the short last group
+                                    # ("... 0130 00") that hand-written regex drops
   bank.aba(s) -> bool ; bank.same_account(a: dict, b: dict) -> bool
   domains.of(email_or_url) -> str ; domains.host_matches(host, known) -> bool
   domains.lookalike(host, known) -> float (0..1)
@@ -33,8 +35,13 @@ Coding rules: re.search may return None, so check before .group(); only call .gr
 pattern has a capture group; convert nothing to float (keep Decimal, write with io.write_json).
 Prefer text.after / text.find over hand-rolled regex. Keep each field to its value only (an account
 name is a name, not the rest of the line). Never lower-case the whole document before extracting.
+vendor_name is the issuing COMPANY's legal name (e.g. "... Ltd", "... GmbH", "... SAS"), never an
+address line; it usually also appears as the payment "Account name". total is the grand total
+(after tax), never the subtotal.
 Skeleton (adapt the labels to the document you are shown):
   doc = pdf.text("/input/invoice.pdf")
+  vendor = text.after(doc, "Account name") or text.find(doc, r"^(.+?(?:Ltd|GmbH|Inc\.?|LLC|SAS|S\.A\.|B\.V\.))\s*$")
+  iban = bank.find_iban(doc)
   inv_no = text.after(doc, ["Invoice Number", "Invoice No."], token=True)
   inv_date = text.iso_date(text.after(doc, ["Invoice Date", "Date"], token=True))
   eu = "eu" if re.search(r"\d\.\d{3},\d{2}", doc) else None     # 1.234,56 style numbers

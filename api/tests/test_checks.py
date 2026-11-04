@@ -90,3 +90,13 @@ def test_money_extraction_helpers():
     assert M.amount_after(doc, "VAT", "eu") == D("1926.60")            # not 191926.60
     assert M.amount_after(doc, "Total", "eu") == D("12066.60")         # not the Subtotal line
     assert M.amount_after(doc, "Shipping", "eu", default=0) == 0
+
+
+def test_find_iban_keeps_short_last_group_and_never_hides_bad_ibans():
+    from airlock_checks import bank as B
+
+    assert B.find_iban("IBAN: DE89 3704 0044 0532 0130 00\nSWIFT/BIC: COBADEFFXXX") == "DE89370400440532013000"
+    assert B.find_iban("IBAN: GB82 WEST 1234 5698 7654 32") == "GB82WEST12345698765432"
+    bad = B.find_iban("IBAN: DE89 3704 0044 0532 0130 01")
+    assert bad and not B.iban(bad)["valid"]   # returned (so policy R6 blocks it), not silently dropped
+    assert B.find_iban("no bank details") is None

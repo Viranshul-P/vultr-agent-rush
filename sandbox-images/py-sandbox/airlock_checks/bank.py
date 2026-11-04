@@ -60,3 +60,22 @@ def same_account(a: dict | None, b: dict | None) -> bool:
     ra = re.sub(r"\D", "", a.get("routing") or "")
     rb = re.sub(r"\D", "", b.get("routing") or "")
     return bool(na) and na == nb and ra == rb
+
+
+def find_iban(doc: str, default=None):
+    """The first IBAN in `doc` whose length and mod-97 checksum are valid, normalised.
+
+    IBANs are printed in groups of 4 with a shorter last group ('DE89 3704 ... 0130 00');
+    hand-written regex often drops that last group. This tries every candidate span and
+    prefers checksum-valid ones. If an IBAN is printed but NONE validates, the full printed
+    value is returned anyway, so the policy's invalid-IBAN rule still sees (and blocks) it."""
+    text = doc or ""
+    first_raw = None
+    for m in re.finditer(r"\b([A-Z]{2}\d{2})((?:[ ]?[A-Z0-9]){10,30})", text):
+        raw = (m.group(1) + m.group(2)).replace(" ", "")
+        first_raw = first_raw or raw
+        for end in range(len(raw), 14, -1):  # longest valid prefix first
+            cand = raw[:end]
+            if iban(cand)["valid"]:
+                return cand
+    return first_raw if first_raw else default

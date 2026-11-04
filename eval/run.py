@@ -84,10 +84,15 @@ def main(argv=None):
 def _wait(c, inv_id, timeout):
     deadline = time.time() + timeout
     while time.time() < deadline:
-        s = c.get(f"/api/invoices/{inv_id}").json()["invoice"]["status"]
+        try:
+            s = c.get(f"/api/invoices/{inv_id}").json()["invoice"]["status"]
+        except httpx.HTTPError as exc:  # one slow poll must not abort a 40-invoice run
+            print(f"  (poll error, retrying: {type(exc).__name__})")
+            time.sleep(3)
+            continue
         if s in TERMINAL:
             return s
-        time.sleep(0.5)
+        time.sleep(2)
     return "TIMEOUT"
 
 
