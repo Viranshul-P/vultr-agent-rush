@@ -106,3 +106,12 @@ def test_health_reports_mock_and_inprocess():
     h = client.get("/api/health").json()
     assert h["mode"] == "mock"
     assert "DEV-UNSAFE" in h["runner"]["tier"]
+
+
+def test_metrics_live_counters_are_per_workspace(inbox):
+    mine = client.get("/api/metrics").json()["live"]
+    assert mine["invoices_posted"] >= 1 and mine["llm_calls"] >= 1
+    other = TestClient(app)  # fresh cookie jar -> new workspace
+    other.post("/api/session")
+    theirs = other.get("/api/metrics").json()["live"]
+    assert theirs == {"llm_calls": 0, "llm_cost_usd": 0, "invoices_posted": 0}

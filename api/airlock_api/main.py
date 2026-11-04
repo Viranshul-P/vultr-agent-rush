@@ -299,7 +299,8 @@ def run_all_drills():
 
 
 @app.get("/api/metrics")
-def metrics():
+def metrics(req: Request, resp: Response, airlock_ws: str | None = Cookie(default=None)):
+    ws = _ws(req, resp, airlock_ws)
     import json as _json
     from pathlib import Path
     results_dir = Path(settings.seed_dir).parent / "eval" / "results"
@@ -309,8 +310,10 @@ def metrics():
         if files:
             latest = _json.loads(files[-1].read_text())
     with session() as s:
-        usage = list(s.exec(select(LlmUsage)))
-        posted = len(list(s.exec(select(ErpPosting))))
+        # "Live" counters are scoped to the caller's workspace, as the Metrics page says.
+        ws_invoices = select(Invoice.id).where(Invoice.workspace_id == ws)
+        usage = list(s.exec(select(LlmUsage).where(LlmUsage.invoice_id.in_(ws_invoices))))
+        posted = len(list(s.exec(select(ErpPosting).where(ErpPosting.workspace_id == ws))))
     total_cost = round(sum(u.cost_usd for u in usage), 4)
     return {"eval": latest, "live": {"llm_calls": len(usage), "llm_cost_usd": total_cost, "invoices_posted": posted}}
 

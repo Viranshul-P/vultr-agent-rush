@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -20,7 +21,16 @@ SEED = Path(settings.seed_dir)
 
 def ensure_invoices_built() -> Path:
     inv_dir = SEED / "invoices"
-    if not (inv_dir / "manifest.json").exists():
+    manifest = inv_dir / "manifest.json"
+    built_for = None
+    if manifest.exists():
+        try:
+            built_for = json.loads(manifest.read_text()).get("domain")
+        except ValueError:
+            built_for = None
+    # Rebuild when missing or built for another DOMAIN, so pay-links always point at
+    # this deployment's own demo sites (never a stale/production hostname).
+    if built_for != settings.domain:
         subprocess.run([sys.executable, str(SEED / "make_invoices.py"), "--domain", settings.domain,
                         "--out", str(inv_dir)], check=True)
     return inv_dir
