@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import threading
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
@@ -97,6 +98,40 @@ def _note_egress(inv_id, run: Run):
         if e.get("decision") == "deny":
             bus.publish(inv_id, "egress.attempt", {"run_id": run.id, "kind": "proxy_deny",
                                                    "detail": f"{e.get('host')}: {e.get('reason')}"})
+
+
+# ------------------------------------------------------------------ dispatch
+
+# One bounded pool for every visitor: a judge's six invoices run up to PIPELINE_WORKERS at a time instead of one
+# after another, and many judges at once queue here instead of overloading the sandbox VM (whose runner refuses
+# work after 60 s without a free slot) or the inference API. Safe for duplicate detection: workspace priors are
+# only POSTED invoices, which need a human approval after processing.
+_pool = ThreadPoolExecutor(max_workers=max(1, settings.pipeline_workers), thread_name_prefix="pipeline")
+_inflight: set[str] = set()
+_inflight_lock = threading.Lock()
+
+
+def submit(inv_id: str) -> bool:
+    """Queue an invoice for processing. False if it is already queued or running (e.g. a double click)."""
+    with _inflight_lock:
+        if inv_id in _inflight:
+            return False
+        _inflight.add(inv_id)
+    _pool.submit(_run_and_release, inv_id)
+    return True
+
+
+def is_inflight(inv_id: str) -> bool:
+    with _inflight_lock:
+        return inv_id in _inflight
+
+
+def _run_and_release(inv_id: str):
+    try:
+        process(inv_id)
+    finally:
+        with _inflight_lock:
+            _inflight.discard(inv_id)
 
 
 # ------------------------------------------------------------------ pipeline
