@@ -193,13 +193,34 @@ function BrowserEvidence({ browser, runs, onOpen }: { browser: any[]; runs: Run[
             <div className={b.credential_harvest ? "fail" : "muted"}><b>{b.credential_harvest ? "Credential-harvest page" : "Page inspected"}</b> — {b.final_url}</div>
             <ul style={{ margin: "4px 0", paddingLeft: 18 }}>{(b.reasons || []).map((r: string, j: number) => <li key={j} className="muted">{r}</li>)}</ul>
             {shots.map((a: any, j: number) => a.key && <img key={j} className="shot" src={`/api/../${a.key}`} alt="screenshot" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />)}
-            {b.downloads_seen > 0 && <div className="fail">{b.downloads_seen} download(s) quarantined (never opened)</div>}
+            {run && <Containment run={run} />}
+            {!run && b.downloads_seen > 0 && <div className="fail">{b.downloads_seen} download(s) quarantined (never opened)</div>}
             {run && <button className="btn ghost" style={{ padding: "3px 10px", fontSize: 12 }} onClick={() => api.run(run.id).then(onOpen)}>proxy log &amp; details</button>}
           </div>
         );
       })}
     </div>
   );
+}
+
+// What the sandbox did with the page's payloads. Only states what was measured: the forced
+// download's hash, the CPU limit the page ran under (with the page's own busy-loop counter,
+// when it exposes one), proxy denials, and how long the container lived before destruction.
+function Containment({ run }: { run: Run }) {
+  const x = run.extra || {};
+  const downloads: any[] = x.downloads || [];
+  const denied = (x.proxy_log || []).filter((e: any) => e.decision === "deny").length;
+  const burn = x.page_cpu_counter;
+  const items: React.ReactNode[] = [];
+  downloads.forEach((d, i) => items.push(
+    <li key={`d${i}`}>Download <span className="mono">{d.name}</span> quarantined, never opened · sha256 <span className="mono">{String(d.sha256).slice(0, 8)}…{String(d.sha256).slice(-4)}</span> · {d.size} B</li>));
+  if (burn != null) items.push(
+    <li key="cpu">Page ran a CPU busy-loop ({Number(burn).toLocaleString()} iterations) inside a {run.limits?.cpus ?? "?"}-CPU, {run.limits?.memory_mb ?? "?"} MB sandbox</li>);
+  if (denied > 0) items.push(<li key="deny">{denied} request(s) denied by the egress proxy</li>);
+  if (run.destroyed_at) items.push(
+    <li key="life">Container destroyed after {(run.duration_ms / 1000).toFixed(1)} s ({run.tier})</li>);
+  if (!items.length) return null;
+  return <ul className={downloads.length || burn != null ? "fail" : "muted"} style={{ margin: "4px 0 8px", paddingLeft: 18 }}>{items}</ul>;
 }
 
 function RunDrawer({ run, onClose }: { run: Run; onClose: () => void }) {

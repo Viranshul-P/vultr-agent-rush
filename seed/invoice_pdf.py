@@ -46,6 +46,8 @@ class InvoiceSpec:
     style: str = "us"  # "us" | "eu"
     banner: str | None = None  # e.g. "SECOND NOTICE"
     hidden_text: list[str] = field(default_factory=list)
+    # How hidden_text is concealed: "white" (white 1pt), "tiny" (normal ink, 1pt), "offpage" (drawn outside the page box)
+    hidden_style: str = "white"
     button: tuple[str, str] | None = None  # (label, url)
     metadata_subject: str | None = None
 
@@ -238,15 +240,23 @@ def render(spec: InvoiceSpec, path: str) -> None:
     c.setFillColor(muted)
     c.drawCentredString(w / 2, 30, f"{spec.vendor_name} · Thank you for your business.")
 
-    # Hidden text: white, 1pt, at the bottom margin. Invisible to a human reader,
-    # but extracted by any PDF text parser (and therefore seen by an AI agent).
+    # Hidden text: invisible (or nearly) to a human reader, but extracted by any
+    # PDF text parser (and therefore seen by an AI agent).
+    #   white   - white, 1pt, at the bottom margin (the golden-path default)
+    #   tiny    - normal ink but 1pt: a speck, not white
+    #   offpage - normal size, drawn left of the page box
     if spec.hidden_text:
-        c.setFillColor(white)
-        c.setFont("Helvetica", 1)
-        hy = 20
+        if spec.hidden_style == "offpage":
+            c.setFillColor(ink)
+            c.setFont("Helvetica", 8)
+            hx, hy, step = -2000, 200, 10
+        else:
+            c.setFillColor(white if spec.hidden_style == "white" else ink)
+            c.setFont("Helvetica", 1)
+            hx, hy, step = 40, 20, 2
         for line in spec.hidden_text:
-            c.drawString(40, hy, line)
-            hy -= 2
+            c.drawString(hx, hy, line)
+            hy -= step
 
     c.showPage()
     c.save()

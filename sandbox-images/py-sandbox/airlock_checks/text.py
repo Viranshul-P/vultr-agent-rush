@@ -63,6 +63,13 @@ def after(doc: str, labels, default=None, token: bool = False):
         m = re.search(lab + r"(.+)$", doc or "", re.I | re.M)
         if m:
             val = m.group(1).strip()
+            # Bilingual label pairs, e.g. "Rechnungsnr. / Invoice No.: X": the matched label is
+            # followed by "/ <other label>:" rather than the value. Skip that part.
+            pair = re.match(r"^[/|]\s*[^:/|]{1,40}:\s*(.*)$", val)
+            if pair:
+                val = pair.group(1).strip()
+            if re.fullmatch(r"[/|:#\s-]*", val):  # a bare separator is not a value
+                continue
             if token:
                 val = val.split()[0] if val.split() else ""
             if val:

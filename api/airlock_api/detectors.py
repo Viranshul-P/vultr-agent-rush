@@ -78,6 +78,20 @@ def keyword_hits(texts: list[str]) -> list[str]:
     return hits[:10]
 
 
+def _suspicious_metadata(scan: ScanResult) -> list[str]:
+    """Metadata fields carrying instruction-like text (Title/Author/Producer on a normal invoice don't)."""
+    return [f"PDF metadata {k}: {v}" for k, v in scan.metadata.items() if keyword_hits([v])]
+
+
+def _model_sample(scan: ScanResult) -> str:
+    """What the safety model and classifier read. Concealed content first (hidden runs and
+    instruction-bearing metadata), because that is where injections hide; otherwise the body.
+    Metadata must be included: the extractor never sees it, so without this a metadata-only
+    injection reached no model and was never confirmed."""
+    concealed = scan.hidden_text + _suspicious_metadata(scan)
+    return "\n".join(concealed) or scan.text[:4000]
+
+
 def run_detectors(scan: ScanResult, invoice_id: str, static_flags: list[str] | None = None) -> DetectorReport:
     bodies = [scan.text] + scan.hidden_text + list(scan.metadata.values())
     kw = keyword_hits(scan.hidden_text + list(scan.metadata.values()))  # body keywords are noisier; weight hidden/meta
@@ -87,11 +101,13 @@ def run_detectors(scan: ScanResult, invoice_id: str, static_flags: list[str] | N
 
     if scan.hidden_text:
         reasons.append(f"{len(scan.hidden_text)} hidden text run(s) in the PDF")
+    if _suspicious_metadata(scan):
+        reasons.append("instruction-like text in the PDF metadata")
     if kw:
         reasons.append(f"instruction-like phrases in hidden text/metadata: {kw[0]}")
 
     # safety model + classifier (skipped silently if a model call fails)
-    sample = "\n".join(scan.hidden_text) or scan.text[:4000]
+    sample = _model_sample(scan)
     try:
         safety = llm.extract_json(llm.quarantined(
             _SAFETY_SYS, sample, "Return JSON {\"flag\": true|false}.", role="safety", invoice_id=invoice_id, json_mode=True))

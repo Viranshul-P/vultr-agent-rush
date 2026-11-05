@@ -88,7 +88,7 @@ Raw file: [`eval/results/2026-11-04-1310.json`](eval/results/2026-11-04-1310.jso
 | Metric | Result |
 |---|---|
 | Outcome accuracy | **85%** (34/40) |
-| Attacks caught | **24/24** (phishing 4/4, injection 6/6, duplicate 6/6, bank change 6/6) |
+| Attacks caught | **22/22** (phishing 4/4, injection 6/6, duplicate 6/6, bank change 6/6; first written here as "24/24", a miscount) |
 | Benign links | 2/2 |
 | Clean invoices passed | 10/16 (6 held or blocked: fail-safe, never paid) |
 | False-positive rate | 33% (6/18 clean + benign) |
@@ -112,3 +112,63 @@ For the eval only, the upload limit on VM-1 was temporarily raised (`UPLOADS_PER
 - Optionally push the sandbox images to the registry and pin them by registry digest.
 - Snapshot both VMs before recording the demo video. Then the video, slides and cover image.
 - The Vultr API key shown in a session log on 2026-11-04 has been rotated. Optionally restrict the new key's access list to known IPs.
+
+---
+
+## 8. 2026-11-04, later (Viranshul, with Claude Code)
+
+Tests: **API 66 passing** (was 55), runner 11, web build clean.
+
+**Deployed to the live site** (both VMs) on 2026-11-04. Code extracted in place, env files untouched; VM-2 rebuilt
+`airlock/py-sandbox:local` (the runner was not restarted); VM-1 rebuilt the API and web (Caddy not restarted).
+Rollback: `~/airlock-backup-20261104-pre-fix.tgz` on each VM, plus image tags `deploy-api:20261104-pre-fix` (VM-1)
+and `airlock/py-sandbox:20261104-pre-fix` (VM-2).
+
+Checked on https://app.beyonders.duckdns.org after the deploy: health OK; **drills 11/11**; golden invoices **5/6**.
+#2 (bilingual) is now CLEAR. #4 (bank change) came back QUARANTINED instead of BLOCKED: the injection classifier
+scores its "please note our new bank details … kindly update your records" text at exactly the 0.60 threshold (seen
+on 2 of 3 runs, also on a test deployment before this deploy; no hidden text or metadata involved, so the detector
+change here doesn't touch it). Payment is stopped either way; whether to change the threshold is open.
+
+| Change | Why | Where |
+|---|---|---|
+| **Fix: injections hidden only in PDF metadata were never quarantined.** The keyword detector found them, but quarantine also needs the safety model or classifier to agree, and those models were only shown hidden text or the page body, never metadata. Instruction-like metadata fields are now included in what the models read; standard Title/Author/Producer fields are not. | Found by the new varied-injection eval set. Reproduced with a failing test before fixing. | `api/airlock_api/detectors.py`, `api/tests/test_detectors.py` |
+| **Eval injections are now placed 5 different ways** (white text, tiny text, off-page text, PDF metadata, a visible note) instead of all white text. Each label records its `variant`. `--injection-mix white` rebuilds the original set; every non-injection invoice is identical in both mixes (verified), so runs stay comparable. | "6/6 injections caught" only measured one hiding trick. The visible-note variant can only be caught by the AI classifiers. | `eval/generate.py`, `seed/invoice_pdf.py` (new `hidden_style`; the default is unchanged and the 6 golden PDFs render identically) |
+| **Eval records why each invoice got its outcome** (rules fired, failed checks, key extracted fields, detector reasons, errors), plus a `miss_breakdown`. Precision is now computed (per outcome; it was always empty), along with `attacks_caught` and drill results for the Metrics page's "drills passed" tile. | The 6 clean-invoice misses in the first eval can't be diagnosed from its results file. | `eval/run.py`, `api/tests/test_eval_scoring.py` |
+| **Eval waits out the upload rate limit** (HTTP 429) instead of skipping invoices. Skipped invoices, if any, are listed in the result. | A skipped upload used to shrink the run silently. Also makes a run possible without raising `UPLOADS_PER_HOUR_PER_IP` (slow: about 4 h). | `eval/run.py` |
+| Invoice page: for each inspected link, the quarantined download's name, sha256 and size; the page's CPU busy-loop counter next to the sandbox's CPU/memory limit; proxy denials; container lifetime. | Containment moment #2 needs these on screen. Previously only "N download(s) quarantined" was shown. | `web/src/pages/InvoiceDetail.tsx` |
+| README: the cost-per-invoice figure is labelled as an estimate (real token counts, placeholder prices). | `api/airlock_api/pricing.py` prices are placeholders. | `README.md` |
+| **Fix: `text.after` returned `/` on bilingual labels.** On `Rechnungsnr. / Invoice No.: EV-…` the German label matched and the value came back as `/`, so golden invoice #2 got `invoice_number="/"`, `po_number="/"` and was held by R8. The helper now skips a `/ <other label>:` part and never returns a bare separator. | Seen in a golden run on the test deployment; reproduced with a failing test. | `sandbox-images/py-sandbox/airlock_checks/text.py`, `api/tests/test_checks.py` |
+| `setup-sandbox-vm.sh`: `gpg --dearmor` gets `--batch --yes` | Without a TTY (script piped over ssh) gpg fails and the script stops before installing gVisor. | `deploy/setup-sandbox-vm.sh` |
+| Removed a no-op line in the extraction loop. | | `api/airlock_api/orchestrator.py` |
+| `handoff.md` rewritten for the live deployment (it still said "nothing is committed" and used the old domain). | | `handoff.md` |
+
+---
+
+## 9. 2026-11-05 (Viranshul, with Claude Code)
+
+### Eval re-run on the live site (measures `4f14b3e` and section 8)
+40 invoices, build `bdbdd69`, varied injection mix (5 placements). Raw file:
+[`eval/results/2026-11-04-2053.json`](eval/results/2026-11-04-2053.json).
+
+| Metric | This run | First run (§6) |
+|---|---|---|
+| Outcome accuracy | **92.5%** (37/40) | 85% (34/40) |
+| Attacks caught | **21/22** (injection 6/6, phishing 4/4, duplicate 6/6, bank change 5/6) | 22/22 (white-text injections only) |
+| Clean invoices passed | 14/16 | 10/16 |
+| False-positive rate | **11%** (2/18) | 33% (6/18) |
+| Precision per outcome | 100% for BLOCK, QUARANTINE, CLEAR/POSTED | not computed |
+| Drills | 11/11 | 11/11 |
+| Latency | p50 34 s, p95 121 s | p50 19 s, p95 60 s |
+| Cost | $0.0040 per invoice (placeholder prices) | $0.0048 |
+
+All 3 misses (`ev_04_clean`, `ev_09_clean`, `ev_16_bank_change`) are `TIMEOUT`s: the invoice didn't finish within the
+eval client's 120 s wait (`--timeout`). Their final outcome wasn't recorded. No finished invoice got a wrong outcome.
+Latency roughly doubled compared with the first run; the cause isn't known yet.
+
+### Repo changes
+| Change | Where |
+|---|---|
+| `eval/run.py`: `--max-cost-usd` and `--max-minutes` stop a run early and still write the result file (with `stopped_early`) | `eval/run.py` |
+| README eval section: the new run, side by side with the first one, and the 22-vs-"24" attack count corrected | `README.md` |
+| handoff: status and to-do list updated | `handoff.md` |

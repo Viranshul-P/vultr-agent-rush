@@ -1,61 +1,56 @@
 # Airlock — Handoff (Team Beyonders)
 
-> Updated 1 Nov 2026. **Nothing is committed** (hackathon starts 3 Nov; commit during the event). The whole backend + frontend works locally with no Vultr account, via a mock LLM and a dev-only in-process runner.
+> Updated 5 Nov 2026. **Live on Vultr:** https://app.beyonders.duckdns.org (real Vultr models, real gVisor sandboxes).
+> Submit target: **Sun 8 Nov, 21:00 IST** (earliest deadline reading: Mon 9 Nov, 03:30 IST). Budget cap: $40.
 
 Plans: [docs/01-research.md](docs/01-research.md) · [02-problem-statements.md](docs/02-problem-statements.md) · [03-implementation-plan.md](docs/03-implementation-plan.md) · [04-build-guide.md](docs/04-build-guide.md)
+What changed while deploying, and what was set up on Vultr: [CHANGES.md](CHANGES.md).
 
 ## Decisions
-- Project **Airlock**, Challenge 1. **Zero cash cost:** runs on Vultr credits only (each member's own $200 account).
-- **HTTPS:** free DuckDNS subdomain + Caddy. No domain purchase.
-- **Sandbox VM:** regular Cloud Compute 2 vCPU/4 GB + **gVisor** (needs no KVM). VX1/Microsandbox dropped.
+- Project **Airlock**, Challenge 1 (Blast Radius Zero), Patterns A + B.
+- **Domain:** `beyonders.duckdns.org` (free DuckDNS) + Caddy with Let's Encrypt. Hosts: `app.`, `brightline.` (benign vendor portal), `filecourier-secure.` (inert phishing SIMULATION).
+- **Sandbox VM:** regular Cloud Compute 2 vCPU/4 GB + **gVisor** (`runsc`, systrap platform, no KVM needed). VX1/Microsandbox dropped.
 - **Frontend:** Vite + React + TS (hand-rolled CSS), built static and served by Caddy.
+- **Sandbox images** are built on VM-2 and pinned by digest. The Container Registry exists but the images aren't pushed (optional).
+- **Skipped on purpose:** login/per-user quotas (judges must click "Process inbox" without signing up), two buckets (the code uses one), full backups (seeded demo data only).
 
-## Status: working end to end (locally, mock mode)
+## Status
+
+### Verified on the real stack ✅
+| Area | Result |
+|---|---|
+| Infra | VPC, VM-1 `airlock-control`, VM-2 `airlock-sandbox` (no public exposure), Managed PG, Object Storage, Serverless Inference: all provisioned and hardened (details in CHANGES.md §5) |
+| gVisor drills D1–D10b | **11/11 pass** on VM-2 · [docs/evidence/drills-vultr-2026-11-04.json](docs/evidence/drills-vultr-2026-11-04.json) |
+| 6 golden invoices on the live URL | **6/6 correct**, incl. approve → ERP posting → signed receipt, and phishing → EICAR download quarantined |
+| Latest live eval (40 invoices, build `bdbdd69`, varied injections) | **92.5%** outcome accuracy, 21/22 attacks caught, 11% false positives, 0 wrong decisions (all 3 misses are eval-client timeouts at 120 s) · [eval/results/2026-11-04-2053.json](eval/results/2026-11-04-2053.json). First run: 85%, 22/22, 33% · [2026-11-04-1310.json](eval/results/2026-11-04-1310.json) |
+| Tests | API 66, runner 11, web build clean |
+
+### Run it locally (mock LLM, no Vultr)
 ```bash
-cd api && uv sync && uv run pytest -q        # 41 passed (incl. full pipeline e2e)
+cd api && uv sync && uv run pytest -q        # 66 passed
 cd runner && uv sync && uv run pytest -q     # 11 passed
 cd web && npm install && npm run build       # builds clean
 ```
-Run the stack locally (mock LLM + in-process dev runner) — see README “Run it locally”. All 6 golden invoices reach the right outcome except the 2 that need the **sandboxed browser** (phishing/benign link), which only runs on the Vultr VM.
+The full local stack command is in the README ("Run it locally").
 
-### Done ✅
-| Area | Where | Notes |
-|---|---|---|
-| Sandbox helper lib | `sandbox-images/py-sandbox/airlock_checks/` | money/bank/domains/text/pdf/scan; unit-tested |
-| py-sandbox + browser images, egress proxy | `sandbox-images/*`, `egress-proxy/` | Dockerfiles + harness + mitmproxy addon written; **built/run only on VM** |
-| Seed + invoice generator | `seed/` | 4 vendors, 6 POs, ERP history, 6 golden PDFs |
-| Schemas | `api/airlock_api/schemas.py` | |
-| **Policy engine** | `api/airlock_api/policy.py` | R1–R12, deterministic, recomputes every check; 33 unit tests |
-| LLM client (+mock) | `api/airlock_api/llm.py` | quarantined/privileged split; Vultr OpenAI-compatible; mock for keyless dev |
-| Detectors + static scan | `api/airlock_api/detectors.py` | hidden text, keywords, safety model, classifier, AST scan |
-| Orchestrator | `api/airlock_api/orchestrator.py` | full state machine, retries, blast-radius, SSE events |
-| Evidence receipts | `api/airlock_api/evidence.py` | Ed25519 sign + verify, Object Storage |
-| Runner | `runner/airlock_runner/` | docker+gVisor backend; dev-unsafe backend; 11 drills; 11 tests |
-| API | `api/airlock_api/main.py` | all routes (inbox, SSE, approval, runs, receipts, drills, metrics, ERP, health) |
-| Web app | `web/` | inbox, invoice timeline, run drawer, containment panel, red-team, metrics, receipt, ERP, about |
-| Demo sites | `demo-sites/` | benign vendor portal + inert SIMULATION suspicious page (EICAR test string) |
-| Eval | `eval/` | seed-aligned generator + scorer; a sample result is in `eval/results/` |
-| Deploy | `deploy/`, `api/Dockerfile`, `runner/Dockerfile`, `.github/workflows/ci.yml` | compose ×2, Caddyfile, env examples, VM setup script, CI + LLM-endpoint guard |
+## Left to do ⏳ (in order)
+0. ✅ CHANGES.md §8 deployed to the live VMs (drills 11/11, golden 5/6; see §8 for #4 and rollback).
+   **Open decision:** invoice #4 hits the injection classifier's 0.60 threshold exactly (QUARANTINE instead of BLOCK).
+1. ✅ Eval re-run on the varied-injection set (CHANGES.md §9). **Open:** p95 latency went from 60 s to 121 s, and 3 invoices hit the eval's 120 s wait. Find out why before recording the video, then re-run with `eval/run.py --base https://app.beyonders.duckdns.org --note "<deployed commit>"` (`--max-cost-usd` / `--max-minutes` cap a run). Never quote a number the eval didn't produce.
+1b. **Real model prices** in `api/airlock_api/pricing.py` (currently placeholders, so "cost per invoice" is an estimate). Take them from the Vultr console / pricing page.
+2. **Snapshot both VMs** before recording the video, and write down how to roll back.
+3. **Submission assets:** video (4:30 with the containment moments; plan in docs/03 §11.1 and the checklist in docs/04 Part 16), 10-slide PDF, 16:9 cover image, lablab form (drafts in docs/03 §11.4). Fill in the video/slides links and the containment timestamp at the top of README.md.
+4. **Vultr billing alert** (console only).
+5. Optional: push the sandbox images to the registry and pin `IMAGE_*` to registry digests.
+6. Optional: restrict the (rotated) Vultr API key's access list to known IPs; add an ACME email to the Caddyfile for certificate expiry notices.
+7. **Before submitting:** make the repo public, tag `v1.0-submission`, and have one teammate follow the setup docs from scratch.
+8. **After submitting:** keep the demo live through judging (daily `/api/health` check). Don't touch production during the buffer.
 
-### Left to do ⏳ (all on the Vultr VMs, during the event)
-1. **Provision** VM-1, VM-2, VPC, firewall, Object Storage, Container Registry, Managed PG (docs/04 Part 2). Fill `deploy/.env.control` and `.env.sandbox` from the `.example` files.
-2. **Build + push** the two sandbox images to Container Registry; put their `@sha256:` digests in `.env.sandbox`.
-3. **Verify on VM-2** (the only things untestable on this laptop):
-   - `docker run --rm --runtime=runsc hello-world`
-   - drills D1–D10 actually pass under gVisor (pids cap, OOM detect, metadata blocked, exfil blocked)
-   - Playwright Chromium runs under runsc through the egress proxy; screenshots return; EICAR download quarantined; CPU cap observed
-4. **Confirm model IDs** at `GET /v1/models` at kickoff; adjust `MODEL_*` if any changed. Set `LLM_MODE=vultr`.
-5. **Deploy** both compose files; point DuckDNS A-records at VM-1; Caddy gets HTTPS automatically.
-6. **Run the real eval** (`eval/run.py --base https://app.<domain>`) to get the numbers for slides/video. Never quote a number the eval didn't produce.
-7. **Submission assets:** video (4:30, containment moment), slides (PDF), cover image (16:9), lablab form. Drafts in docs/03 Part 11.
+## Secrets
+Secrets live only in the gitignored root `.env`, `deploy/.env.control` (VM-1) and `deploy/.env.sandbox` (VM-2). Never commit, paste or screenshot them. The only secret on VM-2 is `RUNNER_TOKEN`. SSH to the VMs uses `~/.ssh/airlock_ed25519` as user `airlock` (two keys are authorized: `airlock-deploy` and `airlock-viranshul-laptop`); VM-2 is reached only through VM-1 (`ProxyJump`).
 
-## What I need from you (user actions)
-- [ ] Each member: own Vultr account (fresh email); redeem the $200 gift code at kickoff.
-- [ ] Create a DuckDNS subdomain (e.g. `beyonders-airlock`) + 2 sub-hosts (`brightline.`, `filecourier-secure.`); keep the token out of the repo.
-- [ ] At kickoff: create a Serverless Inference subscription; put the key in `deploy/.env.control` only.
-- [ ] Decide when to make the first commit (plan: during the event, spread across days — judges check history).
-
-## Known local limitations (by design)
-- Browser/Pattern B needs the VM (no Playwright/Docker here) → link invoices HOLD locally via the R12 fail-safe.
-- Mock LLM is a regex parser; the real Vultr models parse messy invoices far better.
-- Dev runner has **no isolation** and is gated behind `RUNNER_ALLOW_UNSAFE_DEV=1`; real containment is gVisor on VM-2.
+## Known limitations (by design)
+- Locally, Pattern B (the browser) needs the VM, so link invoices HOLD via the R12 fail-safe in mock mode.
+- The mock LLM is a regex parser; the real Vultr models parse messy invoices far better.
+- The dev runner has **no isolation** and is gated behind `RUNNER_ALLOW_UNSAFE_DEV=1`. Real containment is gVisor on VM-2.
+- Vultr Inference models are reasoning models: keep `LLM_REASONING_EFFORT` / `LLM_CODER_REASONING_EFFORT` set, or calls "think" for minutes and return nothing.
