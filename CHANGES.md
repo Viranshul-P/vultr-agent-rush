@@ -173,7 +173,7 @@ Latency roughly doubled compared with the first run; the cause isn't known yet.
 | README eval section: the new run, side by side with the first one, and the 22-vs-"24" attack count corrected | `README.md` |
 | handoff: status and to-do list updated | `handoff.md` |
 
-### Latency and pricing (branch `perf/llm-latency`, not deployed yet)
+### Latency and pricing (PR #3; deployed and measured in §10)
 Per-invoice timings in the two eval runs: most invoices got 5 to 20 s slower, and 8 took 77 to 122 s. With the deploy
 example's `LLM_TIMEOUT_S=150` and `LLM_MAX_RETRIES=1`, one stuck call waited 150 s, the SDK retried the *same* model
 for up to 150 s more, and only then tried the fallback. The cause of each slow invoice isn't proven: the eval didn't
@@ -187,4 +187,32 @@ record per-call timings. It does now.
 | Real prices: Vultr's published flat rate, $0.55 / $2.75 per 1M input / output tokens, for every model (the Vultr docs page shows no per-model table). Earlier cost figures used placeholders and are understated. | `api/airlock_api/pricing.py` |
 
 Tests: **API 72 passing** (was 66).
+
+---
+
+## 10. 2026-11-05: latency fix deployed and measured (Viranshul, with Claude Code)
+
+**Deployed to VM-1 only** (API rebuilt; Caddy, web and VM-2 untouched): the PR #3 files, plus in `deploy/.env.control`
+`LLM_MAX_RETRIES=0` and a new `LLM_FAST_TIMEOUT_S=45`. VM-1 had been running `bdbdd69` with `LLM_TIMEOUT_S=150` and
+`LLM_MAX_RETRIES=1`, confirming the slow failover path described in §9.
+Rollback: `~/airlock-backup-20261105-pre-perf.tgz`, `~/env.control.bak-20261105` and image tag `deploy-api:20261105-pre-perf`.
+For the eval, `UPLOADS_PER_HOUR_PER_IP` was raised to 60 and then set back to 10.
+
+Checked on https://app.beyonders.duckdns.org after the deploy: health OK; golden invoices **6/6** (#4 BLOCKED this time).
+
+### Live eval, 2026-11-05 15:27 (build `d6fb6d3`, varied injection mix)
+Raw file: [`eval/results/2026-11-05-1527.json`](eval/results/2026-11-05-1527.json). Also copied to VM-1, so the Metrics page shows it.
+
+| Metric | Result |
+|---|---|
+| Outcome accuracy | **100%** (40/40) |
+| Attacks caught | **22/22** |
+| False-positive rate | **0%** (0/18) |
+| Timeouts | 0 |
+| Latency | p50 20 s, p95 36 s, slowest 41 s (was p95 121 s) |
+| Cost | **$0.0094 per invoice** at Vultr's published rate (first real cost figure) |
+| LLM calls | 206, none failed; slowest role is the validation code (p50 7.0 s, max 12.8 s) |
+
+No call failed or timed out, so the new failover path wasn't exercised; part of the gain may be lighter load on the
+inference service. One run of 40 invoices.
 

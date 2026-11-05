@@ -112,22 +112,24 @@ All changes made while deploying are listed in [`CHANGES.md`](CHANGES.md).
 ## Evaluation
 `eval/generate.py` builds a labelled, seed-aligned invoice set; `eval/run.py` scores a live instance and writes a JSON the **Metrics** page reads.
 
-**Latest live run, 2026-11-04 20:53 IST**: 40 invoices through https://app.beyonders.duckdns.org, real Vultr models, real gVisor sandboxes, build `bdbdd69`. Injections are hidden 5 different ways (white text, tiny text, off-page text, PDF metadata, a visible note). Raw output: [`eval/results/2026-11-04-2053.json`](eval/results/2026-11-04-2053.json).
+**Latest live run, 2026-11-05 15:27 IST**: 40 invoices through https://app.beyonders.duckdns.org, real Vultr models, real gVisor sandboxes, build `d6fb6d3`. Injections are hidden 5 different ways (white text, tiny text, off-page text, PDF metadata, a visible note). Raw output: [`eval/results/2026-11-05-1527.json`](eval/results/2026-11-05-1527.json).
 
-| Metric | Result | First live run (13:10, earlier build) |
-|---|---|---|
-| Outcome accuracy | **92.5%** (37/40) | 85% (34/40) |
-| Attacks caught | **21/22**: injection 6/6, phishing 4/4, duplicate 6/6, bank change 5/6 | 22/22 (injections were all white text) |
-| Benign links passed | 2/2 | 2/2 |
-| Clean invoices passed | 14/16 | 10/16 |
-| False-positive rate (clean + benign) | **11%** (2/18) | 33% (6/18) |
-| Wrong decisions | **0**. All 3 misses are timeouts (below) | 6 (held or blocked, never paid) |
-| Precision of every outcome (BLOCK, QUARANTINE, CLEAR/POSTED) | 100% | not computed |
-| Security drills (gVisor) | 11/11 | 11/11 |
-| Latency per invoice | p50 34 s · p95 121 s | p50 19 s · p95 60 s |
-| LLM cost per invoice | $0.0040, **understated**: real token counts × the old placeholder prices. `pricing.py` now uses Vultr's published rate ($0.55 / $2.75 per 1M input / output tokens), so the next run will show the real figure, which will be higher | $0.0048 (same placeholder prices) |
+| Metric | Latest (15:27) | Previous (20:53, build `bdbdd69`) | First (13:10) |
+|---|---|---|---|
+| Outcome accuracy | **100%** (40/40) | 92.5% (37/40) | 85% (34/40) |
+| Attacks caught | **22/22**: injection 6/6, phishing 4/4, duplicate 6/6, bank change 6/6 | 21/22 | 22/22 (white-text injections only) |
+| Benign links passed | 2/2 | 2/2 | 2/2 |
+| Clean invoices passed | **16/16** | 14/16 | 10/16 |
+| False-positive rate (clean + benign) | **0%** (0/18) | 11% | 33% |
+| Timeouts | **0** | 3 (eval waited 120 s) | 0 |
+| Precision of every outcome | 100% | 100% | not computed |
+| Security drills (gVisor) | 11/11 | 11/11 | 11/11 |
+| Latency per invoice | **p50 20 s · p95 36 s** (slowest 41 s) | p50 34 s · p95 121 s | p50 19 s · p95 60 s |
+| LLM cost per invoice | **$0.0094** at Vultr's published rate ($0.55 / $2.75 per 1M input / output tokens) | $0.0040 (placeholder prices) | $0.0048 (placeholder prices) |
 
-**The 3 misses** (`ev_04_clean`, `ev_09_clean`, `ev_16_bank_change`) didn't finish within the eval client's 120 s per-invoice wait, so they count as wrong. Their final outcome wasn't recorded. None of the 37 invoices that finished got a wrong outcome. Latency is higher than in the first run, and that's still open.
+Per model call in the latest run (all 206 calls succeeded): safety p50 0.7 s, classifier 1.3 s, planner 1.8 s, extraction code 2.0 s, vision 2.5 s, validation code 7.0 s (max 12.8 s).
+
+What changed for the latest run: the safety model and injection classifier now run alongside extraction, and a stuck model call goes straight to the fallback model instead of being retried on the same model first. No call failed or timed out in this run, so the failover path itself wasn't exercised; part of the latency gain may also be lighter load on the inference service. 40/40 is one run of 40 invoices, not a guarantee.
 
 The first run's false positives were extraction slips on clean invoices, fixed since then (checksum-validated `bank.find_iban`, vendor-name guidance, bilingual labels in `text.after`). Its attack count was written as "24/24" in earlier docs; the set has 22 attack invoices. The earlier "100%" figure came from a mock-LLM local run and is not a live result.
 
