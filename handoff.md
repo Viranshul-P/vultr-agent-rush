@@ -1,6 +1,6 @@
 # Airlock — Handoff (Team Beyonders)
 
-> Updated 5 Nov 2026. **Live on Vultr:** https://app.beyonders.duckdns.org (real Vultr models, real gVisor sandboxes).
+> Updated 5 Nov 2026 (evening). **Live on Vultr:** https://app.beyonders.duckdns.org (real Vultr models, real gVisor sandboxes).
 > Submit target: **Sun 8 Nov, 21:00 IST** (earliest deadline reading: Mon 9 Nov, 03:30 IST). Budget cap: $40.
 
 Plans: [docs/01-research.md](docs/01-research.md) · [02-problem-statements.md](docs/02-problem-statements.md) · [03-implementation-plan.md](docs/03-implementation-plan.md) · [04-build-guide.md](docs/04-build-guide.md)
@@ -27,7 +27,7 @@ What changed while deploying, and what was set up on Vultr: [CHANGES.md](CHANGES
 
 ### Run it locally (mock LLM, no Vultr)
 ```bash
-cd api && uv sync && uv run pytest -q        # 66 passed
+cd api && uv sync && uv run pytest -q        # 74 passed
 cd runner && uv sync && uv run pytest -q     # 11 passed
 cd web && npm install && npm run build       # builds clean
 ```
@@ -35,9 +35,11 @@ The full local stack command is in the README ("Run it locally").
 
 ## Left to do ⏳ (in order)
 0. ✅ CHANGES.md §8 deployed to the live VMs (drills 11/11, golden 5/6; see §8 for #4 and rollback).
-   Invoice #4 (bank change) sits at the injection classifier's 0.60 threshold: QUARANTINED on 2 of 3 runs on 4 Nov, BLOCKED on 5 Nov. Payment is stopped either way; the threshold is unchanged.
+   Invoice #4 (bank change): fixed on 5 Nov by raising the injection classifier threshold to 0.8 (CHANGES.md §11); now BLOCKED by R3/R4.
 1. ✅ Latency fixed and measured (CHANGES.md §10): PR #3 deployed to VM-1 on 5 Nov, eval 40/40, p95 36 s. Re-run the eval with `eval/run.py --base https://app.beyonders.duckdns.org --note "<deployed commit>"` (`--max-cost-usd` / `--max-minutes` cap a run). Never quote a number the eval didn't produce.
 1b. ✅ Real model prices: `pricing.py` uses Vultr's published flat rate, $0.55 / $2.75 per 1M input / output tokens (docs page updated 26 Oct 2026). Costs are stored when each call is made, so eval files before this change used the old placeholder prices and understate cost.
+1c. ✅ Live click-through fixes (CHANGES.md §11, PR #4) and parallel "Process inbox" (§12, PR #5): one visitor's inbox ~1 min, 5 visitors at once 30/30 correct. README has models, limitations and team sections.
+   **Deploying:** auto mode blocks Claude from running deploys on the VMs; it uploads the package to `~/stage/` and a teammate runs `ssh ... 'bash ~/stage/airlock-remote.sh'`. Web builds must replace the *contents* of `web/dist` (Caddy bind-mounts the directory; renaming it needs a Caddy restart).
 2. **Snapshot both VMs** before recording the video, and write down how to roll back.
 3. **Submission assets:** video (4:30 with the containment moments; plan in docs/03 §11.1 and the checklist in docs/04 Part 16), 10-slide PDF, 16:9 cover image, lablab form (drafts in docs/03 §11.4). Fill in the video/slides links and the containment timestamp at the top of README.md.
 4. **Vultr billing alert** (console only).
