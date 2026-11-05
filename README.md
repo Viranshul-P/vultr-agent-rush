@@ -125,7 +125,7 @@ All changes made while deploying are listed in [`CHANGES.md`](CHANGES.md).
 | Precision of every outcome (BLOCK, QUARANTINE, CLEAR/POSTED) | 100% | not computed |
 | Security drills (gVisor) | 11/11 | 11/11 |
 | Latency per invoice | p50 34 s · p95 121 s | p50 19 s · p95 60 s |
-| LLM cost per invoice | $0.0040 (estimate: real token counts × placeholder per-model prices in `api/airlock_api/pricing.py`) | $0.0048 |
+| LLM cost per invoice | $0.0040, **understated**: real token counts × the old placeholder prices. `pricing.py` now uses Vultr's published rate ($0.55 / $2.75 per 1M input / output tokens), so the next run will show the real figure, which will be higher | $0.0048 (same placeholder prices) |
 
 **The 3 misses** (`ev_04_clean`, `ev_09_clean`, `ev_16_bank_change`) didn't finish within the eval client's 120 s per-invoice wait, so they count as wrong. Their final outcome wasn't recorded. None of the 37 invoices that finished got a wrong outcome. Latency is higher than in the first run, and that's still open.
 
