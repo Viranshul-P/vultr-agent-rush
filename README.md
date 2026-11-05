@@ -61,7 +61,7 @@ Judge/clerk ──HTTPS──> VM-1 (Caddy, web, API, policy, approvals, evidenc
 - **Lifecycle** — one container per run, destroyed after; a sweeper kills orphans.
 - **Proof**: 11 one-click **Red Team drills** (`/red-team`) run real attacks (host escape, env dump, metadata SSRF, fork and memory bombs, exfiltration, browser → private range) and check containment. **All 11 pass under gVisor on the Vultr sandbox VM.** Raw results are in [`docs/evidence/drills-vultr-2026-11-04.json`](docs/evidence/drills-vultr-2026-11-04.json). Every invoice gets an **Ed25519-signed evidence receipt**.
 
-### Verified on the real stack (2026-11-04)
+### Verified on the real stack (2026-11-04/05)
 | Check | Result |
 |---|---|
 | gVisor on Vultr Cloud Compute | `runsc` works without KVM (systrap platform); the kernel inside the sandbox is `4.19.0-gvisor` |
@@ -72,6 +72,7 @@ Judge/clerk ──HTTPS──> VM-1 (Caddy, web, API, policy, approvals, evidenc
 | Evidence receipts | sha256 and Ed25519 signature verify |
 | Isolation between visitors | Another visitor's invoice → 404 |
 | VM-2 exposure | Not reachable from the internet; runner bound to the VPC only, token required |
+| Several judges at once (5 Nov) | 5 visitors clicking Process inbox together: 30/30 correct, no errors; one visitor's six invoices finish in about 1 minute |
 
 **Dual-LLM design:** the model that reads the raw invoice has **no tools** (a successful injection has nothing to call); the model that writes the summary **never sees the raw document**; the policy engine, in plain code, owns every decision, and **no model can trigger a payment**.
 
@@ -132,6 +133,31 @@ Per model call in the latest run (all 206 calls succeeded): safety p50 0.7 s, cl
 What changed for the latest run: the safety model and injection classifier now run alongside extraction, and a stuck model call goes straight to the fallback model instead of being retried on the same model first. No call failed or timed out in this run, so the failover path itself wasn't exercised; part of the latency gain may also be lighter load on the inference service. 40/40 is one run of 40 invoices, not a guarantee.
 
 The first run's false positives were extraction slips on clean invoices, fixed since then (checksum-validated `bank.find_iban`, vendor-name guidance, bilingual labels in `text.after`). Its attack count was written as "24/24" in earlier docs; the set has 22 attack invoices. The earlier "100%" figure came from a mock-LLM local run and is not a live result.
+
+## Models (all via Vultr Serverless Inference)
+
+| Role | Model | Why |
+|---|---|---|
+| Extraction and validation code (Pattern A) | `glm-5.3` | The larger GLM model, used where correctness matters most: it writes the programs that run in the sandbox. Runs at `reasoning_effort=medium` with a 14k-token cap, so it reasons enough to write working parsers without stalling |
+| Decision summary, injection classifier | `glm-5.3-flash` | Short structured JSON answers; fast (p50 1–2 s) |
+| Phishing-page vision verdict (Pattern B) | `qwen3.8-flash-next` | Multimodal: reads the screenshots the sandboxed browser takes |
+| Content-safety check | `nemotron-3.5-content-safety` | Purpose-built safety classifier; p50 0.7 s |
+| Fallback for every role | `deepseek-v4.1-flash-1017` | A different model family, so one model's outage or stall doesn't stop the pipeline |
+
+Every model is set by an env var (`MODEL_*`), so swapping one is config only. A stuck call fails over to the fallback after 45 s (short calls) or 150 s (code and vision), and every call, including failed ones, is logged with its tokens, cost and latency. The invoice API exposes these per-call timings, without prompts or outputs. Vendor matching uses deterministic fuzzy string matching, not a model.
+
+## Known limitations
+- **Detection is probabilistic; containment is not.** A cleverly written injection could get past the hidden-text heuristic, the safety model and the classifier (threshold 0.8). If it does, the model that reads it still has no tools, no network and no secrets, and the deterministic policy engine and a human make every payment decision.
+- **Capacity:** one sandbox VM (2 vCPU / 4 GB). Up to 6 invoices are processed at once across all visitors; more visitors queue and see **Queued…**. Measured: 5 visitors at once, 30/30 correct, no errors, slowest inbox 186 s.
+- **No sign-in, by design** (judges must be able to click straight in). Each visitor gets an isolated workspace by cookie; uploads are limited to 10 per hour per IP.
+- **The sandboxed validation is advisory.** The model-written checks run in the sandbox for transparency, but the control plane recomputes every check authoritatively. When the two differ, the timeline shows a "disagreement" warning; the decision always uses the control plane's result.
+- **Egress proxy:** blocks private, link-local and cloud-metadata addresses and logs every request. A DNS-rebinding window between its check and its connect remains; the browser container has no other route out, and the sandbox VM holds no secrets.
+- **Costs** use Vultr's published flat rate ($0.55 / $2.75 per 1M input / output tokens) on real token counts.
+- **Sandbox images** are built on the sandbox VM and pinned by digest; the Container Registry exists but isn't used by the live deploy.
+- **Demo only:** fictional vendors and invoices, a mock ERP, no real payments. Locally, the mock LLM is a regex parser and the dev runner has no isolation (gated behind `RUNNER_ALLOW_UNSAFE_DEV=1`).
+
+## Team Beyonders
+Contributors: Viranshul-P and Kuldeeep18 on GitHub. Built during the Vultr Agent Rush hackathon (Nov 2026) with Claude Code.
 
 ## Repo layout
 `api/` control plane · `runner/` sandbox runner · `sandbox-images/` gVisor images + `airlock_checks` · `egress-proxy/` · `demo-sites/` · `seed/` · `eval/` · `web/` · `deploy/` · `docs/` plans · `handoff.md`.
