@@ -157,7 +157,13 @@ Every model is set by an env var (`MODEL_*`), so swapping one is config only. A 
 - **Demo only:** fictional vendors and invoices, a mock ERP, no real payments. Locally, the mock LLM is a regex parser and the dev runner has no isolation (gated behind `RUNNER_ALLOW_UNSAFE_DEV=1`).
 
 ## Team Beyonders
-Contributors: Viranshul-P and Kuldeeep18 on GitHub. Built during the Vultr Agent Rush hackathon (Nov 2026) with Claude Code.
+| Member | GitHub |
+|---|---|
+| Viranshul | Viranshul-P |
+| Kuldeep | Kuldeeep18 |
+| Priyanshu Doshi | Priyanshu-byte-coder |
+
+Built during the Vultr Agent Rush hackathon (Nov 2026) with Claude Code.
 
 ## Repo layout
 `api/` control plane · `runner/` sandbox runner · `sandbox-images/` gVisor images + `airlock_checks` · `egress-proxy/` · `demo-sites/` · `seed/` · `eval/` · `web/` · `deploy/` · `docs/` plans · `handoff.md`.
