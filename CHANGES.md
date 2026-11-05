@@ -88,7 +88,7 @@ Raw file: [`eval/results/2026-11-04-1310.json`](eval/results/2026-11-04-1310.jso
 | Metric | Result |
 |---|---|
 | Outcome accuracy | **85%** (34/40) |
-| Attacks caught | **24/24** (phishing 4/4, injection 6/6, duplicate 6/6, bank change 6/6) |
+| Attacks caught | **22/22** (phishing 4/4, injection 6/6, duplicate 6/6, bank change 6/6; first written here as "24/24", a miscount) |
 | Benign links | 2/2 |
 | Clean invoices passed | 10/16 (6 held or blocked: fail-safe, never paid) |
 | False-positive rate | 33% (6/18 clean + benign) |
@@ -142,3 +142,33 @@ change here doesn't touch it). Payment is stopped either way; whether to change 
 | `setup-sandbox-vm.sh`: `gpg --dearmor` gets `--batch --yes` | Without a TTY (script piped over ssh) gpg fails and the script stops before installing gVisor. | `deploy/setup-sandbox-vm.sh` |
 | Removed a no-op line in the extraction loop. | | `api/airlock_api/orchestrator.py` |
 | `handoff.md` rewritten for the live deployment (it still said "nothing is committed" and used the old domain). | | `handoff.md` |
+
+---
+
+## 9. 2026-11-05 (Viranshul, with Claude Code)
+
+### Eval re-run on the live site (measures `4f14b3e` and section 8)
+40 invoices, build `bdbdd69`, varied injection mix (5 placements). Raw file:
+[`eval/results/2026-11-04-2053.json`](eval/results/2026-11-04-2053.json).
+
+| Metric | This run | First run (§6) |
+|---|---|---|
+| Outcome accuracy | **92.5%** (37/40) | 85% (34/40) |
+| Attacks caught | **21/22** (injection 6/6, phishing 4/4, duplicate 6/6, bank change 5/6) | 22/22 (white-text injections only) |
+| Clean invoices passed | 14/16 | 10/16 |
+| False-positive rate | **11%** (2/18) | 33% (6/18) |
+| Precision per outcome | 100% for BLOCK, QUARANTINE, CLEAR/POSTED | not computed |
+| Drills | 11/11 | 11/11 |
+| Latency | p50 34 s, p95 121 s | p50 19 s, p95 60 s |
+| Cost | $0.0040 per invoice (placeholder prices) | $0.0048 |
+
+All 3 misses (`ev_04_clean`, `ev_09_clean`, `ev_16_bank_change`) are `TIMEOUT`s: the invoice didn't finish within the
+eval client's 120 s wait (`--timeout`). Their final outcome wasn't recorded. No finished invoice got a wrong outcome.
+Latency roughly doubled compared with the first run; the cause isn't known yet.
+
+### Repo changes
+| Change | Where |
+|---|---|
+| `eval/run.py`: `--max-cost-usd` and `--max-minutes` stop a run early and still write the result file (with `stopped_early`) | `eval/run.py` |
+| README eval section: the new run, side by side with the first one, and the 22-vs-"24" attack count corrected | `README.md` |
+| handoff: status and to-do list updated | `handoff.md` |

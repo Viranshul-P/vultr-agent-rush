@@ -112,19 +112,24 @@ All changes made while deploying are listed in [`CHANGES.md`](CHANGES.md).
 ## Evaluation
 `eval/generate.py` builds a labelled, seed-aligned invoice set; `eval/run.py` scores a live instance and writes a JSON the **Metrics** page reads.
 
-**Live run, 2026-11-04 13:10 IST**: 40 invoices through https://app.beyonders.duckdns.org, real Vultr models, real gVisor sandboxes. Raw output: [`eval/results/2026-11-04-1310.json`](eval/results/2026-11-04-1310.json).
+**Latest live run, 2026-11-04 20:53 IST**: 40 invoices through https://app.beyonders.duckdns.org, real Vultr models, real gVisor sandboxes, build `bdbdd69`. Injections are hidden 5 different ways (white text, tiny text, off-page text, PDF metadata, a visible note). Raw output: [`eval/results/2026-11-04-2053.json`](eval/results/2026-11-04-2053.json).
 
-| Metric | Result |
-|---|---|
-| Outcome accuracy | **85%** (34/40) |
-| Attacks caught (phishing, injection, duplicate, bank change) | **24/24** (100% recall in every attack class) |
-| Benign links passed | 2/2 |
-| Clean invoices passed | 10/16. The 6 misses were held or blocked (fail-safe, never paid) |
-| False-positive rate (clean + benign) | 33% (6/18) |
-| Latency per invoice | p50 19 s · p95 60 s |
-| LLM cost per invoice | $0.0048 (estimate: real token counts × placeholder per-model prices in `api/airlock_api/pricing.py`) |
+| Metric | Result | First live run (13:10, earlier build) |
+|---|---|---|
+| Outcome accuracy | **92.5%** (37/40) | 85% (34/40) |
+| Attacks caught | **21/22**: injection 6/6, phishing 4/4, duplicate 6/6, bank change 5/6 | 22/22 (injections were all white text) |
+| Benign links passed | 2/2 | 2/2 |
+| Clean invoices passed | 14/16 | 10/16 |
+| False-positive rate (clean + benign) | **11%** (2/18) | 33% (6/18) |
+| Wrong decisions | **0**. All 3 misses are timeouts (below) | 6 (held or blocked, never paid) |
+| Precision of every outcome (BLOCK, QUARANTINE, CLEAR/POSTED) | 100% | not computed |
+| Security drills (gVisor) | 11/11 | 11/11 |
+| Latency per invoice | p50 34 s · p95 121 s | p50 19 s · p95 60 s |
+| LLM cost per invoice | $0.0040 (estimate: real token counts × placeholder per-model prices in `api/airlock_api/pricing.py`) | $0.0048 |
 
-The false positives are extraction slips on clean invoices: an address line taken as the vendor name, or the IBAN's short last group dropped. A fix (checksum-validated `bank.find_iban` plus vendor-name guidance) is deployed but **not yet measured**. Don't quote a number for it until a new eval file exists. The earlier "100%" figure came from a mock-LLM local run and is not a live result.
+**The 3 misses** (`ev_04_clean`, `ev_09_clean`, `ev_16_bank_change`) didn't finish within the eval client's 120 s per-invoice wait, so they count as wrong. Their final outcome wasn't recorded. None of the 37 invoices that finished got a wrong outcome. Latency is higher than in the first run, and that's still open.
+
+The first run's false positives were extraction slips on clean invoices, fixed since then (checksum-validated `bank.find_iban`, vendor-name guidance, bilingual labels in `text.after`). Its attack count was written as "24/24" in earlier docs; the set has 22 attack invoices. The earlier "100%" figure came from a mock-LLM local run and is not a live result.
 
 ## Repo layout
 `api/` control plane · `runner/` sandbox runner · `sandbox-images/` gVisor images + `airlock_checks` · `egress-proxy/` · `demo-sites/` · `seed/` · `eval/` · `web/` · `deploy/` · `docs/` plans · `handoff.md`.
