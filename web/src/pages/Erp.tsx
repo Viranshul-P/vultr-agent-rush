@@ -1,39 +1,69 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { motion } from "motion/react";
+import { Building2, Landmark, Lock } from "lucide-react";
 import { api } from "../api";
+import { Empty, PageHeader, Sk, ease } from "../ui";
 
 export function Erp() {
-  const [postings, setPostings] = React.useState<any[]>([]);
-  const [vendors, setVendors] = React.useState<any[]>([]);
+  const [postings, setPostings] = React.useState<any[] | null>(null);
+  const [vendors, setVendors] = React.useState<any[] | null>(null);
   React.useEffect(() => {
-    api.erp().then((d) => setPostings(d.postings)).catch(() => {});
-    fetch("/api/vendors").then((r) => r.json()).then((d) => setVendors(d.vendors)).catch(() => {});
+    api.erp().then((d) => setPostings(d.postings || [])).catch(() => setPostings([]));
+    fetch("/api/vendors").then((r) => r.json()).then((d) => setVendors(d.vendors || [])).catch(() => setVendors([]));
   }, []);
+  const total = (postings || []).reduce((acc: Record<string, number>, p) => { acc[p.currency] = (acc[p.currency] || 0) + Number(p.amount || 0); return acc; }, {});
+
   return (
     <div>
-      <h1>Mock ERP</h1>
-      <div className="muted" style={{ marginBottom: 16 }}>Only human-approved invoices reach this ledger. No model can write here.</div>
-      <div className="card" style={{ padding: 0, marginBottom: 20 }}>
-        <table>
-          <thead><tr><th>Posted</th><th>Invoice #</th><th>Amount</th></tr></thead>
-          <tbody>
-            {postings.map((p) => (
-              <tr key={p.id}><td className="mono muted">{p.ts?.slice(0, 19).replace("T", " ")}</td><td className="mono">{p.invoice_number}</td><td className="mono">{p.currency} {p.amount}</td></tr>
-            ))}
-            {postings.length === 0 && <tr><td colSpan={3} className="muted" style={{ padding: 20 }}>Nothing posted yet.</td></tr>}
-          </tbody>
-        </table>
+      <PageHeader title="Ledger" sub="A mock ERP. Only invoices a person approved can reach it; no model has a way to write here." />
+
+      <div className="panel" style={{ marginBottom: 24 }}>
+        <div className="panel-h">
+          <Landmark size={16} /><h2>Posted payments</h2>
+          <span className="sub">{postings ? `${postings.length} posted` : ""}</span>
+          <span className="right">{Object.entries(total).map(([c, v]) => <span key={c} className="tag ok">{c} {v.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>)}</span>
+        </div>
+        {postings === null ? <div className="panel-b"><Sk /><div style={{ height: 10 }} /><Sk w="60%" /></div> : postings.length === 0 ? (
+          <Empty icon={<Lock />} title="Nothing posted yet" action={<Link className="btn secondary sm" to="/inbox">Go to the inbox</Link>}>
+            Process the inbox, then approve a cleared invoice. It shows up here with its signed receipt.
+          </Empty>
+        ) : (
+          <div className="table-wrap">
+            <table className="t">
+              <thead><tr><th>Posted</th><th>Invoice #</th><th className="r">Amount</th></tr></thead>
+              <tbody>
+                {postings.map((p, i) => (
+                  <motion.tr key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04, duration: 0.3, ease }}>
+                    <td className="mono muted">{p.ts?.slice(0, 19).replace("T", " ")}</td>
+                    <td className="mono">{p.invoice_number}</td>
+                    <td className="r mono num">{p.currency} {Number(p.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-      <h2>Vendor master</h2>
-      <div className="card" style={{ padding: 0 }}>
-        <table>
-          <thead><tr><th>Vendor</th><th>Domains</th><th>Bank on file</th><th>Phone</th></tr></thead>
-          <tbody>
-            {vendors.map((v) => (
-              <tr key={v.id}><td>{v.name}</td><td className="mono muted">{(v.email_domains || []).join(", ")}</td>
-                <td className="mono">{v.bank?.iban || v.bank?.account_number || "—"}</td><td className="mono">{v.phone}</td></tr>
-            ))}
-          </tbody>
-        </table>
+
+      <div className="panel">
+        <div className="panel-h"><Building2 size={16} /><h2>Vendor master</h2><span className="sub">what every invoice is checked against</span></div>
+        <div className="table-wrap">
+          <table className="t">
+            <thead><tr><th>Vendor</th><th>Email domains</th><th>Bank on file</th><th>Phone</th></tr></thead>
+            <tbody>
+              {vendors === null && [0, 1, 2].map((i) => <tr key={i}><td><Sk w={140} /></td><td><Sk w={120} /></td><td><Sk w={180} /></td><td><Sk w={90} /></td></tr>)}
+              {(vendors || []).map((v) => (
+                <tr key={v.id}>
+                  <td style={{ fontWeight: 540 }}>{v.name}</td>
+                  <td className="mono muted" style={{ fontSize: 12.5 }}>{(v.email_domains || []).join(", ")}</td>
+                  <td className="mono" style={{ fontSize: 12.5 }}>{v.bank?.iban || v.bank?.account_number || "—"}</td>
+                  <td className="mono muted" style={{ fontSize: 12.5 }}>{v.phone}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

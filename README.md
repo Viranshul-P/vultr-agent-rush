@@ -96,6 +96,7 @@ PYTHONPATH="../sandbox-images/py-sandbox:../seed:../runner:." \
 uv run uvicorn airlock_api.main:app --port 8000
 
 cd ../web && npm install && npm run dev        # http://localhost:5173
+# or develop the UI against the live API: API_TARGET=https://app.beyonders.duckdns.org npm run dev
 ```
 
 ## Deploy on Vultr

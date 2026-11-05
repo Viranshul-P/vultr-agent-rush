@@ -129,3 +129,20 @@ def test_process_all_runs_in_parallel_and_never_double_queues():
         time.sleep(0.3)
     statuses = {client.get(f"/api/invoices/{i}").json()["invoice"]["status"] for i in first}
     assert statuses <= TERMINAL, statuses
+
+
+def test_run_screenshot_serves_only_listed_pngs():
+    from airlock_api.db import Run, session
+    from airlock_api.storage import store
+    png = b"\x89PNG\r\n\x1a\n" + b"0" * 32
+    store.put("runs/t/shot.png", png, "image/png")
+    store.put("runs/t/payload.bin", b"MZ evil", "application/octet-stream")
+    with session() as s:
+        s.add(Run(id="run-shot-test", invoice_id=None, kind="browse", attempt=1, tier="test", container_id="c", image_digest="d",
+                  artifacts=[{"name": "shot.png", "key": "runs/t/shot.png"}, {"name": "payload.bin", "key": "runs/t/payload.bin"}]))
+        s.commit()
+    r = client.get("/api/runs/run-shot-test/screenshots/shot.png")
+    assert r.status_code == 200 and r.headers["content-type"] == "image/png" and r.content == png
+    assert client.get("/api/runs/run-shot-test/screenshots/payload.bin").status_code == 404
+    assert client.get("/api/runs/run-shot-test/screenshots/other.png").status_code == 404
+    assert client.get("/api/runs/nope/screenshots/shot.png").status_code == 404

@@ -241,6 +241,27 @@ def get_run(run_id: str):
     return to_dict(r)
 
 
+@app.get("/api/runs/{run_id}/screenshots/{name}")
+def run_screenshot(run_id: str, name: str):
+    """Serve a PNG screenshot a sandbox run produced. Only .png artifacts listed on the run are
+    served, so quarantined downloads and other files are never reachable through this route."""
+    with session() as s:
+        r = s.get(Run, run_id)
+    art = next((a for a in (r.artifacts if r else []) or [] if a.get("name") == name), None)
+    if not art or not name.endswith(".png") or "/" in name or not art.get("key"):
+        raise HTTPException(404, "screenshot not found")
+    from .storage import store
+    try:
+        data = store.get(art["key"])
+    except Exception:
+        raise HTTPException(404, "screenshot not found")
+    if not data[:4] == bytes([0x89]) + b"PNG":
+        raise HTTPException(404, "screenshot not found")
+    return Response(data, media_type="image/png", headers={
+        "Cache-Control": "private, max-age=3600", "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'"})
+
+
 @app.get("/api/receipts/{inv_id}")
 def receipt(inv_id: str, req: Request, resp: Response, airlock_ws: str | None = Cookie(default=None)):
     ws = _ws(req, resp, airlock_ws)
