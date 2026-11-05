@@ -10,7 +10,7 @@ export function Metrics() {
   return (
     <div>
       <h1>Metrics</h1>
-      <div className="muted" style={{ marginBottom: 16 }}>Live counters from this workspace, plus the latest offline evaluation run.</div>
+      <div className="muted" style={{ marginBottom: 16 }}>Live counters from this workspace, plus the latest evaluation: labelled invoices sent through this live site.</div>
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>Live</h2>
         <div className="tiles">
@@ -21,11 +21,13 @@ export function Metrics() {
       </div>
       {e ? (
         <div className="card">
-          <h2>Evaluation <span className="muted" style={{ fontSize: 12 }}>run {e.run_date || e.date || ""}</span></h2>
+          <h2>Evaluation <span className="muted" style={{ fontSize: 12 }}>run {e.run_date || e.date || ""}{e.n ? ` · ${e.n} invoices` : ""}</span></h2>
           <div className="tiles" style={{ marginBottom: 16 }}>
             <Tile n={pct(e.outcome_accuracy)} l="outcome accuracy" />
             <Tile n={pct(e.false_positive_rate)} l="false positives (clean)" />
-            <Tile n={e.latency_p50_ms ? `${e.latency_p50_ms}ms` : "—"} l="latency p50" />
+            {e.attacks_caught && <Tile n={`${e.attacks_caught.caught}/${e.attacks_caught.total}`} l="attacks caught" />}
+            <Tile n={secs(e.latency_p50_ms)} l="latency p50" />
+            <Tile n={secs(e.latency_p95_ms)} l="latency p95" />
             <Tile n={e.cost_per_invoice_usd != null ? `$${e.cost_per_invoice_usd}` : "—"} l="cost / invoice" />
             <Tile n={e.drills_passed != null ? `${e.drills_passed}/${e.drills_total}` : "—"} l="drills passed" />
           </div>
@@ -48,4 +50,5 @@ export function Metrics() {
 }
 
 const Tile = ({ n, l }: { n: any; l: string }) => <div className="tile card" style={{ padding: 14 }}><div className="n">{n}</div><div className="l">{l}</div></div>;
+const secs = (ms: any) => (ms == null ? "—" : `${(ms / 1000).toFixed(1)} s`);
 const pct = (x: any) => (x == null ? "—" : `${Math.round(x * 100)}%`);

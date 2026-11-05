@@ -6,10 +6,11 @@ import { Chip, money } from "../components";
 export function Inbox() {
   const nav = useNavigate();
   const [invoices, setInvoices] = React.useState<Invoice[]>([]);
+  const [loaded, setLoaded] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const fileRef = React.useRef<HTMLInputElement>(null);
 
-  const load = React.useCallback(() => api.invoices().then((d) => setInvoices(d.invoices)).catch(() => {}), []);
+  const load = React.useCallback(() => api.invoices().then((d) => { setInvoices(d.invoices); setLoaded(true); }).catch(() => {}), []);
   React.useEffect(() => {
     load();
     const t = setInterval(load, 1500);
@@ -51,7 +52,7 @@ export function Inbox() {
                 <td className="muted">{inv.summary?.headline || ""}</td>
               </tr>
             ))}
-            {invoices.length === 0 && <tr><td colSpan={6} className="muted" style={{ padding: 20 }}>No invoices. Click “Reset demo”.</td></tr>}
+            {invoices.length === 0 && <tr><td colSpan={6} className="muted" style={{ padding: 20 }}>{loaded ? "No invoices. Click “Reset demo”." : "Loading…"}</td></tr>}
           </tbody>
         </table>
       </div>
