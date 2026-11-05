@@ -126,6 +126,9 @@ def main(argv=None):
     ap.add_argument("--max-wait-min", type=float, default=70,
                     help="minutes to keep retrying one upload after HTTP 429 (rate limit) before skipping it")
     ap.add_argument("--note", default="", help="free-text note stored in the result (e.g. the deployed commit)")
+    ap.add_argument("--max-cost-usd", type=float, default=None,
+                    help="stop (and still write results) once this run's LLM cost reaches this amount")
+    ap.add_argument("--max-minutes", type=float, default=None, help="stop (and still write results) after this long")
     args = ap.parse_args(argv)
     os.makedirs(args.out, exist_ok=True)
     labels_doc = json.load(open(os.path.join(args.invoices, "labels.json")))
@@ -136,7 +139,15 @@ def main(argv=None):
 
     rows, skipped = [], []
     started = time.time()
+    stopped_early = None
     for item in labels:
+        if args.max_minutes and time.time() - started > args.max_minutes * 60:
+            stopped_early = f"time cap {args.max_minutes} min"
+        elif args.max_cost_usd and rows and _run_cost(c) >= args.max_cost_usd:
+            stopped_early = f"cost cap ${args.max_cost_usd}"
+        if stopped_early:
+            print(f"STOPPING EARLY: {stopped_early} reached after {len(rows)} invoices")
+            break
         inv = _upload(c, os.path.join(args.invoices, item["filename"]), item["filename"], args.max_wait_min)
         if isinstance(inv, str):
             print(f"{item['filename']:28} SKIPPED: {inv}")
@@ -157,6 +168,7 @@ def main(argv=None):
         "base": args.base,
         "dataset": {"domain": labels_doc.get("domain"), "seed": labels_doc.get("seed"), "n_labelled": len(labels)},
         "note": args.note or None,
+        "stopped_early": stopped_early,
         "duration_s": int(time.time() - started),
         **score(rows),
         "cost_per_invoice_usd": round(metrics["live"]["llm_cost_usd"] / max(1, len(rows)), 5),
@@ -171,6 +183,14 @@ def main(argv=None):
           f"p50 {result['latency_p50_ms']}ms  skipped {len(skipped)}  -> {fname}")
     for k, v in result["miss_breakdown"].items():
         print(f"  miss: {v} x {k}")
+
+
+def _run_cost(c) -> float:
+    """LLM cost so far in this run's workspace (the API scopes live metrics to the caller's workspace)."""
+    try:
+        return float(c.get("/api/metrics").json()["live"]["llm_cost_usd"] or 0)
+    except (httpx.HTTPError, ValueError, KeyError, TypeError):
+        return 0.0
 
 
 def _upload(c, path, filename, max_wait_min) -> dict | str:
