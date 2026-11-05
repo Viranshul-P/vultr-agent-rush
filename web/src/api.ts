@@ -6,7 +6,7 @@ export type Status =
   | "AWAIT_APPROVAL" | "POSTED" | "REJECTED" | "BLOCKED" | "HELD" | "QUARANTINED" | "ERROR";
 
 export interface Invoice {
-  id: string; order: number; title: string; filename: string; status: Status;
+  id: string; order: number; title: string; filename: string; status: Status; queued?: boolean;
   source: string; expected?: string | null;
   fields?: any; detectors?: any; sandbox_checks?: any[]; browser?: any[];
   policy?: any; summary?: any; blast_radius?: any; error?: string | null;

@@ -1,9 +1,9 @@
 import React from "react";
 
-export function Chip({ status }: { status: string }) {
-  const proc = ["SCANNING", "EXTRACTING", "VALIDATING", "INSPECTING_LINKS", "DECIDING"].includes(status);
+export function Chip({ status, queued }: { status: string; queued?: boolean }) {
+  const proc = queued || ["SCANNING", "EXTRACTING", "VALIDATING", "INSPECTING_LINKS", "DECIDING"].includes(status);
   const cls = proc ? "PROC" : status;
-  const label = proc ? "Processing…" : status.replace(/_/g, " ").toLowerCase();
+  const label = queued ? "Queued…" : proc ? "Processing…" : status.replace(/_/g, " ").toLowerCase();
   return <span className={`chip ${cls}`}>{label}</span>;
 }
 

@@ -48,7 +48,7 @@ export function Inbox() {
                 <td>{inv.fields?.vendor_name || inv.title}</td>
                 <td className="mono">{inv.fields?.invoice_number || "—"}</td>
                 <td className="mono">{money(inv.fields) || "—"}</td>
-                <td><Chip status={inv.status} /></td>
+                <td><Chip status={inv.status} queued={inv.queued} /></td>
                 <td className="muted">{inv.summary?.headline || ""}</td>
               </tr>
             ))}

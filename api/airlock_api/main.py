@@ -60,8 +60,11 @@ def _inv_or_404(inv_id: str, ws: str) -> Invoice:
 
 
 def _public(inv: Invoice) -> dict:
+    from .orchestrator import is_inflight
     d = to_dict(inv)
     d.pop("file_key", None)
+    # Waiting for a free pipeline worker (several visitors at once): show it, rather than a silent "new".
+    d["queued"] = inv.status == "NEW" and is_inflight(inv.id)
     return d
 
 
