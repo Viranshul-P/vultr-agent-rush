@@ -115,6 +115,26 @@ def explain(inv: dict) -> dict:
     }
 
 
+def compact_calls(calls) -> list[dict]:
+    """Per-call timings for one invoice (from the API's llm_calls; empty on older builds)."""
+    return [{"role": k.get("role"), "model": k.get("model"), "ms": k.get("latency_ms"), "ok": k.get("ok")}
+            for k in (calls or [])]
+
+
+def llm_breakdown(rows: list[dict]) -> dict:
+    """Where the time goes: per role, call count, failures, median and slowest call."""
+    by_role: dict[str, list[dict]] = {}
+    for r in rows:
+        for k in r.get("llm_calls") or []:
+            by_role.setdefault(k["role"], []).append(k)
+    out = {}
+    for role, ks in sorted(by_role.items()):
+        ms = [k["ms"] or 0 for k in ks]
+        out[role] = {"calls": len(ks), "failed": sum(1 for k in ks if not k["ok"]),
+                     "p50_ms": int(statistics.median(ms)), "max_ms": max(ms)}
+    return out
+
+
 # ------------------------------------------------------------------ live run
 
 def main(argv=None):
@@ -122,7 +142,8 @@ def main(argv=None):
     ap.add_argument("--base", default=os.environ.get("AIRLOCK_BASE", "http://127.0.0.1:8000"))
     ap.add_argument("--invoices", default=os.path.join(os.path.dirname(__file__), "invoices"))
     ap.add_argument("--out", default=os.path.join(os.path.dirname(__file__), "results"))
-    ap.add_argument("--timeout", type=int, default=120, help="seconds to wait for one invoice to finish")
+    ap.add_argument("--timeout", type=int, default=300,
+                    help="seconds to wait for one invoice to finish (slow invoices still get a real outcome)")
     ap.add_argument("--max-wait-min", type=float, default=70,
                     help="minutes to keep retrying one upload after HTTP 429 (rate limit) before skipping it")
     ap.add_argument("--note", default="", help="free-text note stored in the result (e.g. the deployed commit)")
@@ -155,10 +176,11 @@ def main(argv=None):
             continue
         t0 = time.monotonic()
         c.post(f"/api/invoices/{inv['id']}/process")
-        status, detail = _wait(c, inv["id"], args.timeout)
+        status, doc = _wait(c, inv["id"], args.timeout)
         dt_ms = int((time.monotonic() - t0) * 1000)
         ok = status in OK_OUTCOMES.get(item["expected"], set())
-        rows.append({**item, "status": status, "ok": ok, "latency_ms": dt_ms, **explain(detail)})
+        rows.append({**item, "status": status, "ok": ok, "latency_ms": dt_ms, **explain(doc.get("invoice") or {}),
+                     "llm_calls": compact_calls(doc.get("llm_calls"))})
         why = ",".join(h["id"] for h in rows[-1]["rules_fired"]) or "-"
         print(f"{item['filename']:28} expect {item['expected']:14} got {status:16} {'OK  ' if ok else 'MISS'} [{why}]")
 
@@ -171,6 +193,7 @@ def main(argv=None):
         "stopped_early": stopped_early,
         "duration_s": int(time.time() - started),
         **score(rows),
+        "llm_latency_by_role": llm_breakdown(rows),
         "cost_per_invoice_usd": round(metrics["live"]["llm_cost_usd"] / max(1, len(rows)), 5),
         "skipped": skipped,
         "rows": rows,
@@ -208,17 +231,19 @@ def _upload(c, path, filename, max_wait_min) -> dict | str:
 
 
 def _wait(c, inv_id, timeout) -> tuple[str, dict]:
+    """Poll until the invoice is terminal. Returns (status, full detail doc: invoice, events, llm_calls)."""
     deadline = time.time() + timeout
     last: dict = {}
     while time.time() < deadline:
         try:
-            last = c.get(f"/api/invoices/{inv_id}").json()["invoice"]
+            last = c.get(f"/api/invoices/{inv_id}").json()
+            status = last["invoice"].get("status")
         except (httpx.HTTPError, ValueError, KeyError) as exc:  # one slow poll must not abort a 40-invoice run
             print(f"  (poll error, retrying: {type(exc).__name__})")
             time.sleep(3)
             continue
-        if last.get("status") in TERMINAL:
-            return last["status"], last
+        if status in TERMINAL:
+            return status, last
         time.sleep(2)
     return "TIMEOUT", last
 

@@ -12,6 +12,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 
 from sqlmodel import select
 
@@ -109,11 +110,15 @@ def process(inv_id: str):
         # 1. SCANNING -----------------------------------------------------
         _state(inv_id, "SCANNING")
         scan = _scan(inv_id, pdf_bytes)
-        det = detectors.run_detectors(scan, inv_id)
+        # The detector models only read the scan, and nothing uses their report until extraction is
+        # done, so they run alongside extraction instead of before it (saves two model calls of wait).
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            det_future = pool.submit(detectors.run_detectors, scan, inv_id)
 
-        # 2. EXTRACTING ---------------------------------------------------
-        _state(inv_id, "EXTRACTING")
-        fields, extract_flags = _extract(inv_id, pdf_bytes, scan)
+            # 2. EXTRACTING -----------------------------------------------
+            _state(inv_id, "EXTRACTING")
+            fields, extract_flags = _extract(inv_id, pdf_bytes, scan)
+            det = det_future.result()
         det.static_flags = sorted(set(det.static_flags) | set(extract_flags))
         if scan.hidden_text and {"network", "env-access", "subprocess"} & set(extract_flags):
             det.injection_suspected = True

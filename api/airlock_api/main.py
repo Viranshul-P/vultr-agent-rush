@@ -94,7 +94,12 @@ def get_invoice(inv_id: str, req: Request, resp: Response, airlock_ws: str | Non
     with session() as s:
         runs = [to_dict(r) for r in s.exec(select(Run).where(Run.invoice_id == inv_id).order_by(Run.created_at))]
         events = [to_dict(e) for e in s.exec(select(Event).where(Event.invoice_id == inv_id).order_by(Event.id))]
-    return {"invoice": _public(inv), "runs": runs, "events": events}
+        # Per-call timings (no prompts or outputs), so slow invoices can be explained from outside.
+        llm_calls = [{"role": u.role, "model": u.model, "latency_ms": u.latency_ms, "ok": u.ok,
+                      "prompt_tokens": u.prompt_tokens, "completion_tokens": u.completion_tokens,
+                      "ts": u.ts.isoformat()}
+                     for u in s.exec(select(LlmUsage).where(LlmUsage.invoice_id == inv_id).order_by(LlmUsage.id))]
+    return {"invoice": _public(inv), "runs": runs, "events": events, "llm_calls": llm_calls}
 
 
 @app.post("/api/invoices")

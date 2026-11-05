@@ -73,3 +73,14 @@ def test_explain_tolerates_missing_and_extracts_trail():
     assert d["failed_checks"] == [{"id": "bank_matches_master", "detail": "differs"}]
     assert d["extracted"] == {"vendor_name": "Kestrel", "total": "10.00", "iban": "DE89..."}
     assert d["error"] is None
+
+
+def test_llm_breakdown_per_role():
+    rows = [{"llm_calls": ev.compact_calls([
+                {"role": "classifier", "model": "a", "latency_ms": 2000, "ok": True},
+                {"role": "coder_extract", "model": "b", "latency_ms": 150000, "ok": False},
+                {"role": "coder_extract", "model": "fb", "latency_ms": 9000, "ok": True}])},
+            {"llm_calls": []}, {}]
+    out = ev.llm_breakdown(rows)
+    assert out["coder_extract"] == {"calls": 2, "failed": 1, "p50_ms": 79500, "max_ms": 150000}
+    assert out["classifier"]["calls"] == 1 and ev.compact_calls(None) == []

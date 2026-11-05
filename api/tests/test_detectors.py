@@ -56,3 +56,31 @@ def test_metadata_only_injection():
 def test_standard_metadata_alone_is_not_sent_as_suspicious():
     # Title/Author/Producer are on every invoice; they must not crowd the body out of the model sample.
     assert detectors._model_sample(_scan()) == BODY[:4000]
+
+
+def test_safety_and_classifier_run_concurrently(monkeypatch):
+    """Both detector calls are in flight at once (the wait is the slower call, not the sum)."""
+    import threading
+    from airlock_api import llm
+    barrier = threading.Barrier(2, timeout=5)
+
+    def fake(system, sample, task, *, role, invoice_id, json_mode=False, doc_id="doc"):
+        barrier.wait()  # deadlocks (BrokenBarrierError after 5 s) if the calls run one after another
+        return '{"flag": false}' if role == "safety" else '{"score": 0.9, "quotes": ["x"]}'
+
+    monkeypatch.setattr(llm, "quarantined", fake)
+    r = detectors.run_detectors(_scan(), "t-par")
+    assert r.safety_flag is False and r.classifier_score == 0.9 and r.injection_suspected
+
+
+def test_a_failing_detector_model_is_skipped(monkeypatch):
+    from airlock_api import llm
+
+    def fake(system, sample, task, *, role, **kw):
+        if role == "safety":
+            raise TimeoutError("stuck")
+        return '{"score": 0.1}'
+
+    monkeypatch.setattr(llm, "quarantined", fake)
+    r = detectors.run_detectors(_scan(), "t-fail")
+    assert r.safety_flag is None and r.classifier_score == 0.1 and not r.injection_suspected

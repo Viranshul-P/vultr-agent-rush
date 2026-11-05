@@ -22,8 +22,8 @@ What changed while deploying, and what was set up on Vultr: [CHANGES.md](CHANGES
 | Infra | VPC, VM-1 `airlock-control`, VM-2 `airlock-sandbox` (no public exposure), Managed PG, Object Storage, Serverless Inference: all provisioned and hardened (details in CHANGES.md §5) |
 | gVisor drills D1–D10b | **11/11 pass** on VM-2 · [docs/evidence/drills-vultr-2026-11-04.json](docs/evidence/drills-vultr-2026-11-04.json) |
 | 6 golden invoices on the live URL | **6/6 correct**, incl. approve → ERP posting → signed receipt, and phishing → EICAR download quarantined |
-| Latest live eval (40 invoices, build `bdbdd69`, varied injections) | **92.5%** outcome accuracy, 21/22 attacks caught, 11% false positives, 0 wrong decisions (all 3 misses are eval-client timeouts at 120 s) · [eval/results/2026-11-04-2053.json](eval/results/2026-11-04-2053.json). First run: 85%, 22/22, 33% · [2026-11-04-1310.json](eval/results/2026-11-04-1310.json) |
-| Tests | API 66, runner 11, web build clean |
+| Latest live eval (40 invoices, build `d6fb6d3`, varied injections) | **40/40** correct, 22/22 attacks, 0% false positives, 0 timeouts, p50 20 s / p95 36 s, $0.0094 per invoice at real prices · [eval/results/2026-11-05-1527.json](eval/results/2026-11-05-1527.json). Earlier: 92.5% (20:53), 85% (13:10) |
+| Tests | API 72, runner 11, web build clean |
 
 ### Run it locally (mock LLM, no Vultr)
 ```bash
@@ -35,9 +35,9 @@ The full local stack command is in the README ("Run it locally").
 
 ## Left to do ⏳ (in order)
 0. ✅ CHANGES.md §8 deployed to the live VMs (drills 11/11, golden 5/6; see §8 for #4 and rollback).
-   **Open decision:** invoice #4 hits the injection classifier's 0.60 threshold exactly (QUARANTINE instead of BLOCK).
-1. ✅ Eval re-run on the varied-injection set (CHANGES.md §9). **Open:** p95 latency went from 60 s to 121 s, and 3 invoices hit the eval's 120 s wait. Find out why before recording the video, then re-run with `eval/run.py --base https://app.beyonders.duckdns.org --note "<deployed commit>"` (`--max-cost-usd` / `--max-minutes` cap a run). Never quote a number the eval didn't produce.
-1b. **Real model prices** in `api/airlock_api/pricing.py` (currently placeholders, so "cost per invoice" is an estimate). Take them from the Vultr console / pricing page.
+   Invoice #4 (bank change) sits at the injection classifier's 0.60 threshold: QUARANTINED on 2 of 3 runs on 4 Nov, BLOCKED on 5 Nov. Payment is stopped either way; the threshold is unchanged.
+1. ✅ Latency fixed and measured (CHANGES.md §10): PR #3 deployed to VM-1 on 5 Nov, eval 40/40, p95 36 s. Re-run the eval with `eval/run.py --base https://app.beyonders.duckdns.org --note "<deployed commit>"` (`--max-cost-usd` / `--max-minutes` cap a run). Never quote a number the eval didn't produce.
+1b. ✅ Real model prices: `pricing.py` uses Vultr's published flat rate, $0.55 / $2.75 per 1M input / output tokens (docs page updated 26 Oct 2026). Costs are stored when each call is made, so eval files before this change used the old placeholder prices and understate cost.
 2. **Snapshot both VMs** before recording the video, and write down how to roll back.
 3. **Submission assets:** video (4:30 with the containment moments; plan in docs/03 §11.1 and the checklist in docs/04 Part 16), 10-slide PDF, 16:9 cover image, lablab form (drafts in docs/03 §11.4). Fill in the video/slides links and the containment timestamp at the top of README.md.
 4. **Vultr billing alert** (console only).
