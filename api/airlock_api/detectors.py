@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import ast
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 from . import llm
 from .schemas import DetectorReport, ScanResult
@@ -106,26 +107,26 @@ def run_detectors(scan: ScanResult, invoice_id: str, static_flags: list[str] | N
     if kw:
         reasons.append(f"instruction-like phrases in hidden text/metadata: {kw[0]}")
 
-    # safety model + classifier (skipped silently if a model call fails)
+    # safety model + classifier (skipped silently if a model call fails). They are independent,
+    # so both run at once: the wait is the slower of the two, not the sum.
     sample = _model_sample(scan)
-    try:
-        safety = llm.extract_json(llm.quarantined(
-            _SAFETY_SYS, sample, "Return JSON {\"flag\": true|false}.", role="safety", invoice_id=invoice_id, json_mode=True))
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        safety_f = pool.submit(_ask_json, _SAFETY_SYS, sample, "Return JSON {\"flag\": true|false}.", "safety", invoice_id)
+        cls_f = pool.submit(_ask_json, _CLASSIFIER_SYS, sample, "Return JSON {\"score\": 0..1, \"quotes\": [..]}.",
+                            "classifier", invoice_id)
+        safety, cls = safety_f.result(), cls_f.result()
+    if safety is not None:
         report.safety_flag = bool(safety.get("flag"))
         if report.safety_flag:
             reasons.append("safety model flagged the content")
-    except Exception:
-        report.safety_flag = None
-    try:
-        cls = llm.extract_json(llm.quarantined(
-            _CLASSIFIER_SYS, sample, "Return JSON {\"score\": 0..1, \"quotes\": [..]}.",
-            role="classifier", invoice_id=invoice_id, json_mode=True))
-        report.classifier_score = float(cls.get("score", 0))
-        report.classifier_quotes = [str(q)[:300] for q in cls.get("quotes", [])][:5]
-        if report.classifier_score >= 0.6:
+    if cls is not None:
+        try:
+            report.classifier_score = float(cls.get("score", 0))
+            report.classifier_quotes = [str(q)[:300] for q in cls.get("quotes", [])][:5]
+        except (TypeError, ValueError):
+            report.classifier_score = None
+        if (report.classifier_score or 0) >= 0.6:
             reasons.append(f"injection classifier score {report.classifier_score:.2f}")
-    except Exception:
-        report.classifier_score = None
 
     net_or_env = {"network", "env-access", "subprocess"} & set(report.static_flags)
     report.injection_suspected = bool(
@@ -134,6 +135,14 @@ def run_detectors(scan: ScanResult, invoice_id: str, static_flags: list[str] | N
         or bool(scan.hidden_text and net_or_env)
     report.reasons = reasons[:6]
     return report
+
+
+def _ask_json(system: str, sample: str, task: str, role: str, invoice_id: str) -> dict | None:
+    """One detector model call; None if the call or its JSON fails (the detector is then skipped)."""
+    try:
+        return llm.extract_json(llm.quarantined(system, sample, task, role=role, invoice_id=invoice_id, json_mode=True))
+    except Exception:
+        return None
 
 
 _SAFETY_SYS = ("You are a content-safety classifier for an accounts-payable system. The text is extracted from an "

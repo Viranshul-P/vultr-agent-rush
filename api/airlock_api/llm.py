@@ -29,9 +29,19 @@ def _openai():
     if _client is None:
         from openai import OpenAI
 
+        # No SDK-level retries: a retry of the same model after a timeout doubled the wait (2 x LLM_TIMEOUT_S)
+        # before the fallback was even tried. _chat() does the retrying, moving on to the fallback model.
         _client = OpenAI(base_url=settings.inference_base_url, api_key=settings.inference_api_key,
-                         timeout=settings.llm_timeout_s, max_retries=settings.llm_max_retries)
+                         timeout=settings.llm_timeout_s, max_retries=0)
     return _client
+
+
+# Short classification/summary calls; they normally finish in seconds, so a long wait means a stuck call.
+_FAST_ROLES = {"classifier", "safety", "planner"}
+
+
+def _timeout_for(role: str) -> float:
+    return settings.llm_fast_timeout_s if role in _FAST_ROLES else settings.llm_timeout_s
 
 
 def _record(invoice_id, role, model, usage, latency_ms, ok=True):
@@ -71,22 +81,25 @@ def _chat(model, messages, *, role, invoice_id, json_mode=False, temperature=Non
         kwargs["extra_body"] = {"reasoning_effort": effort}
     if json_mode:
         kwargs["response_format"] = {"type": "json_object"}
-    t0 = time.monotonic()
-    try:
-        resp = _create(kwargs)
-    except Exception:
-        _record(invoice_id, role, model, None, int((time.monotonic() - t0) * 1000), ok=False)
-        if model == settings.model_fallback:
-            raise
-        model = kwargs["model"] = settings.model_fallback
+    kwargs["timeout"] = _timeout_for(role)
+    # The requested model once, then the fallback (retried LLM_MAX_RETRIES times). Every attempt is
+    # recorded, failed ones with ok=False, so cost and latency figures stay honest.
+    attempts = [model] + [settings.model_fallback] * (1 + max(0, settings.llm_max_retries))
+    if model == settings.model_fallback:
+        attempts = attempts[1:]
+    for i, m in enumerate(attempts):
+        kwargs["model"] = m
         t0 = time.monotonic()
         try:
             resp = _create(kwargs)
         except Exception:
-            _record(invoice_id, role, model, None, int((time.monotonic() - t0) * 1000), ok=False)
-            raise
-    _record(invoice_id, role, model, getattr(resp, "usage", None), int((time.monotonic() - t0) * 1000))
-    return resp.choices[0].message.content or ""
+            _record(invoice_id, role, m, None, int((time.monotonic() - t0) * 1000), ok=False)
+            if i == len(attempts) - 1:
+                raise
+            continue
+        _record(invoice_id, role, m, getattr(resp, "usage", None), int((time.monotonic() - t0) * 1000))
+        return resp.choices[0].message.content or ""
+    raise AssertionError("unreachable")
 
 
 # --------------------------------------------------------------- public API

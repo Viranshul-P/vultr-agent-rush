@@ -27,7 +27,9 @@ class Settings:
     model_safety: str = field(default_factory=lambda: _env("MODEL_SAFETY", "nemotron-3.5-content-safety"))
     model_fallback: str = field(default_factory=lambda: _env("MODEL_FALLBACK", "deepseek-v4.1-flash-1017"))
     llm_temperature: float = field(default_factory=lambda: float(_env("LLM_TEMPERATURE", "0.1")))
-    llm_timeout_s: float = field(default_factory=lambda: float(_env("LLM_TIMEOUT_S", "90")))
+    llm_timeout_s: float = field(default_factory=lambda: float(_env("LLM_TIMEOUT_S", "90")))  # code-writing + vision
+    # safety / classifier / planner: short calls, so a long wait means a stuck call -> fall back sooner
+    llm_fast_timeout_s: float = field(default_factory=lambda: float(_env("LLM_FAST_TIMEOUT_S", "45")))
     llm_max_retries: int = field(default_factory=lambda: int(_env("LLM_MAX_RETRIES", "1")))
     llm_max_tokens: int = field(default_factory=lambda: int(_env("LLM_MAX_TOKENS", "6000")))
     llm_reasoning_effort: str = field(default_factory=lambda: _env("LLM_REASONING_EFFORT", "low"))  # "" disables

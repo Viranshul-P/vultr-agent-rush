@@ -42,3 +42,50 @@ def test_non_coder_roles_use_fast_bounds(monkeypatch):
     llm._chat("m", [{"role": "user", "content": "x"}], role="classifier", invoice_id=None)
     assert calls[0]["max_tokens"] == settings.llm_max_tokens
     assert calls[0]["extra_body"] == {"reasoning_effort": settings.llm_reasoning_effort}
+
+
+def test_stuck_call_goes_to_fallback_without_retrying_the_same_model(monkeypatch):
+    """A timeout used to be retried on the same model first (2 x timeout before the fallback ran)."""
+    init_db()
+    calls = []
+
+    def create(**kw):
+        calls.append(kw)
+        if kw["model"] != settings.model_fallback:
+            raise TimeoutError("stuck")
+        return _resp('{"score": 0.1}')
+
+    monkeypatch.setattr(settings, "llm_max_retries", 0)
+    monkeypatch.setattr(llm, "_openai", lambda: NS(chat=NS(completions=NS(create=create))))
+    llm._chat("primary-model", [{"role": "user", "content": "x"}], role="classifier", invoice_id=None)
+    assert [c["model"] for c in calls] == ["primary-model", settings.model_fallback]
+
+
+def test_max_retries_adds_fallback_attempts_then_raises(monkeypatch):
+    init_db()
+    calls = []
+
+    def create(**kw):
+        calls.append(kw["model"])
+        raise TimeoutError("stuck")
+
+    monkeypatch.setattr(settings, "llm_max_retries", 1)
+    monkeypatch.setattr(llm, "_openai", lambda: NS(chat=NS(completions=NS(create=create))))
+    try:
+        llm._chat("primary-model", [{"role": "user", "content": "x"}], role="planner", invoice_id=None)
+        raise AssertionError("expected the last failure to propagate")
+    except TimeoutError:
+        pass
+    assert calls == ["primary-model", settings.model_fallback, settings.model_fallback]
+
+
+def test_per_role_timeouts(monkeypatch):
+    init_db()
+    seen = {}
+    monkeypatch.setattr(llm, "_openai", lambda: NS(chat=NS(completions=NS(
+        create=lambda **kw: seen.__setitem__(kw["model"], kw["timeout"]) or _resp('{"ok": true}')))))
+    for role in ("classifier", "coder_extract", "vision"):
+        llm._chat(role, [{"role": "user", "content": "x"}], role=role, invoice_id=None)
+    assert seen["classifier"] == settings.llm_fast_timeout_s
+    assert seen["coder_extract"] == settings.llm_timeout_s
+    assert seen["vision"] == settings.llm_timeout_s  # images take longer; not cut short
