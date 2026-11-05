@@ -135,7 +135,7 @@ def process(inv_id: str):
         _state(inv_id, "VALIDATING")
         data = load(domain)
         vendors, pos, receipts, history = policy_tables(data)
-        sandbox_checks = _validate(inv_id, fields, vendors, pos, receipts)
+        sandbox_checks = _validate(inv_id, fields, vendors, pos, receipts, history)
         _set(inv_id, sandbox_checks=[c.model_dump() for c in sandbox_checks])
 
         # 4. INSPECTING_LINKS --------------------------------------------
@@ -228,7 +228,7 @@ def _extract(inv_id, pdf_bytes, scan: ScanResult):
     return None, sorted(flags)
 
 
-def _validate(inv_id, fields: InvoiceFields, vendors, pos, receipts):
+def _validate(inv_id, fields: InvoiceFields, vendors, pos, receipts, history=()):
     from .policy import PolicyContext, compute_checks
     # Control-plane checks are authoritative; we also run an advisory sandbox pass for the demo.
     context = {
@@ -236,6 +236,8 @@ def _validate(inv_id, fields: InvoiceFields, vendors, pos, receipts):
         "vendor_master": vendors,
         "purchase_orders": list(pos.values()),
         "receipts": list(receipts.values()),
+        "prior_invoices": [{k: h.get(k) for k in ("vendor_id", "invoice_number", "po_number", "invoice_date",
+                                                   "currency", "total")} for h in history],
     }
     code_raw = llm.quarantined(prompts.CODER_VALIDATE_SYS, json.dumps(fields.model_dump(mode="json")),
                                "Write the validation program.", role="coder_validate", invoice_id=inv_id)
@@ -338,6 +340,8 @@ def _summarise(inv_id, fields, result, det, browser) -> Summary:
             "rules_fired": [h.model_dump() for h in result.rules_fired],
             "checks": [c.model_dump() for c in result.checks],
             "injection_suspected": det.injection_suspected,
+            # What the detectors actually found, so the summary doesn't invent e.g. "hidden" text.
+            "injection_evidence": det.reasons,
             "vendor_name": fields.vendor_name, "total": str(fields.total), "currency": fields.currency,
             "browser": [b.model_dump() for b in browser],
         }, role="planner", invoice_id=inv_id)

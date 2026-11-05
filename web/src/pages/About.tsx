@@ -31,7 +31,7 @@ export function About() {
           <h2>Containment</h2>
           <ul>
             <li>gVisor microkernel isolation on a <b>separate VM</b></li>
-            <li><b>No network</b> for code; browser traffic is allow-listed by an egress proxy</li>
+            <li><b>No network</b> for code; the browser reaches the web only through an egress proxy that blocks private and cloud-metadata addresses and logs every request</li>
             <li><b>No secrets</b> ever enter the sandbox VM</li>
             <li>CPU / memory / pid / time caps; destroyed after each task</li>
             <li>Every run signed into a tamper-evident receipt</li>
@@ -45,7 +45,7 @@ export function About() {
             <li>Serverless Inference — all agent LLM calls</li>
             <li>VPC + Firewall — private runner link</li>
             <li>Object Storage — uploads, screenshots, receipts</li>
-            <li>Container Registry — sandbox images</li>
+            <li>Container Registry — private registry for the sandbox images (the live deploy builds them on the sandbox VM, pinned by digest)</li>
             <li>Managed PostgreSQL — application data</li>
           </ul>
         </div>

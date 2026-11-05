@@ -216,3 +216,27 @@ Raw file: [`eval/results/2026-11-05-1527.json`](eval/results/2026-11-05-1527.jso
 No call failed or timed out, so the new failover path wasn't exercised; part of the gain may be lighter load on the
 inference service. One run of 40 invoices.
 
+---
+
+## 11. 2026-11-05: fixes from a live click-through (Viranshul, with Claude Code; PR #4)
+
+Clicked through https://app.beyonders.duckdns.org as a judge would: process inbox, approve, ERP, signed receipt,
+Red Team (all 11 drills re-run live: pass), Metrics, How it works. No console errors. Found and fixed:
+
+| Problem | Fix | Where |
+|---|---|---|
+| **"Sandbox/control disagreement" warnings on every invoice** (4 per invoice). The validation prompt described `context.json` wrongly, so the model guessed key names and `vendor_known`, `bank_matches_master`, `sender_domain`, `three_way_qty` always failed. Looked like tampered runs. | Prompt documents the exact `fields.json` / `context.json` schema and the control plane's matching rules; prior invoices are passed for the duplicate check. After the fix: 0 disagreements on 5 of 6 golden invoices (one `duplicate` disagreement left on #3). | `api/airlock_api/prompts.py`, `orchestrator.py` |
+| **Golden #4 (bank change) quarantined as an injection.** Its visible "please note our new bank details… kindly update your records" scored exactly 0.60 on the injection classifier. | Classifier threshold 0.6 → 0.8. All 12 real injections in two live evals scored 0.95–1.00. #4 is now BLOCKED by R3/R4 as intended. | `api/airlock_api/detectors.py` (+ test) |
+| **Summary said "hidden AI instructions" on #4**, which has none. | The planner gets the detectors' evidence and must not mention hidden text unless it was found. | `orchestrator.py`, `prompts.py` |
+| Inbox flashed "No invoices. Click Reset demo" while loading; Metrics called the live eval "offline", showed "19657ms" and no p95 / attacks caught; How it works called the proxy an allow-list (it's a block list for private and metadata addresses) and said the registry holds the images. | Fixed wording and tiles. | `web/src/pages/Inbox.tsx`, `Metrics.tsx`, `About.tsx` |
+
+Deployed the API part to VM-1 (rollback: `~/airlock-backup-20261105-pre-click.tgz`, image `deploy-api:20261105-pre-click`).
+Golden invoices after deploy: **6/6**. Subset eval of the threshold change (6 injections, all 5 hiding styles, plus 4 bank
+changes): **10/10**, every injection scored 1.00 ·
+[`docs/evidence/eval-subset-injection-bank-2026-11-05-1558.json`](docs/evidence/eval-subset-injection-bank-2026-11-05-1558.json)
+(kept out of `eval/results/` so it doesn't replace the 40-invoice numbers on the Metrics page).
+The web part needs a Caddy restart to show: the deploy replaced the `web/dist` directory, and Caddy's bind mount
+still points at the old one. The deploy script now replaces the directory's contents in place instead.
+
+Tests: API 73.
+

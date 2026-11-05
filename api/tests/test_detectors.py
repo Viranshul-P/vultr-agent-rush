@@ -84,3 +84,16 @@ def test_a_failing_detector_model_is_skipped(monkeypatch):
     monkeypatch.setattr(llm, "quarantined", fake)
     r = detectors.run_detectors(_scan(), "t-fail")
     assert r.safety_flag is None and r.classifier_score == 0.1 and not r.injection_suspected
+
+
+def test_borderline_classifier_score_alone_is_not_an_injection(monkeypatch):
+    """Golden #4's legitimate 'please note our new bank details' notice scored exactly 0.60 on the live
+    classifier and was quarantined as an injection. Real injections scored 0.95-1.00."""
+    from airlock_api import llm
+
+    def fake(system, sample, task, *, role, **kw):
+        return '{"flag": false}' if role == "safety" else '{"score": 0.6, "quotes": ["kindly update your records"]}'
+
+    monkeypatch.setattr(llm, "quarantined", fake)
+    r = detectors.run_detectors(_scan(text=BODY + "\nPlease note our new bank details. Kindly update your records."), "t-bank")
+    assert r.classifier_score == 0.6 and not r.injection_suspected and r.reasons == []

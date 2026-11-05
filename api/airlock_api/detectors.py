@@ -79,6 +79,12 @@ def keyword_hits(texts: list[str]) -> list[str]:
     return hits[:10]
 
 
+# Live evals (2026-11-04/05): all 12 real injections scored 0.95-1.00 (incl. a visible note, which only the
+# classifier can catch), while a legitimate "please note our new bank details" notice scored exactly 0.60 and was
+# quarantined as an injection. 0.80 leaves a margin on both sides. The bank change itself is still BLOCKED by R3/R4.
+CLASSIFIER_THRESHOLD = 0.8
+
+
 def _suspicious_metadata(scan: ScanResult) -> list[str]:
     """Metadata fields carrying instruction-like text (Title/Author/Producer on a normal invoice don't)."""
     return [f"PDF metadata {k}: {v}" for k, v in scan.metadata.items() if keyword_hits([v])]
@@ -125,13 +131,13 @@ def run_detectors(scan: ScanResult, invoice_id: str, static_flags: list[str] | N
             report.classifier_quotes = [str(q)[:300] for q in cls.get("quotes", [])][:5]
         except (TypeError, ValueError):
             report.classifier_score = None
-        if (report.classifier_score or 0) >= 0.6:
+        if (report.classifier_score or 0) >= CLASSIFIER_THRESHOLD:
             reasons.append(f"injection classifier score {report.classifier_score:.2f}")
 
     net_or_env = {"network", "env-access", "subprocess"} & set(report.static_flags)
     report.injection_suspected = bool(
-        scan.hidden_text and kw) or bool(kw) and (report.safety_flag or (report.classifier_score or 0) >= 0.6) \
-        or (report.classifier_score or 0) >= 0.6 or bool(report.safety_flag) \
+        scan.hidden_text and kw) or bool(kw) and (report.safety_flag or (report.classifier_score or 0) >= CLASSIFIER_THRESHOLD) \
+        or (report.classifier_score or 0) >= CLASSIFIER_THRESHOLD or bool(report.safety_flag) \
         or bool(scan.hidden_text and net_or_env)
     report.reasons = reasons[:6]
     return report
