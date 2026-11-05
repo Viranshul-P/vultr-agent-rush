@@ -10,7 +10,7 @@ What changed while deploying, and what was set up on Vultr: [CHANGES.md](CHANGES
 - Project **Airlock**, Challenge 1 (Blast Radius Zero), Patterns A + B.
 - **Domain:** `beyonders.duckdns.org` (free DuckDNS) + Caddy with Let's Encrypt. Hosts: `app.`, `brightline.` (benign vendor portal), `filecourier-secure.` (inert phishing SIMULATION).
 - **Sandbox VM:** regular Cloud Compute 2 vCPU/4 GB + **gVisor** (`runsc`, systrap platform, no KVM needed). VX1/Microsandbox dropped.
-- **Frontend:** Vite + React + TS (hand-rolled CSS), built static and served by Caddy.
+- **Frontend:** Vite + React + TS, hand-rolled CSS design system (`web/src/styles.css`, light + dark), Geist font self-hosted, `motion` for animation, `lucide-react` icons. Built static and served by Caddy. Routes: `/` overview, `/inbox`, `/invoices/:id`, `/red-team`, `/metrics`, `/erp`, `/about`.
 - **Sandbox images** are built on VM-2 and pinned by digest. The Container Registry exists but the images aren't pushed (optional).
 - **Skipped on purpose:** login/per-user quotas (judges must click "Process inbox" without signing up), two buckets (the code uses one), full backups (seeded demo data only).
 

@@ -1,54 +1,122 @@
 import React from "react";
+import { motion } from "motion/react";
+import { Activity, Gauge } from "lucide-react";
 import { api } from "../api";
+import { CountUp, PageHeader, Sk, ease, pct, secs } from "../ui";
+
+const CLASS_NAME: Record<string, string> = {
+  clean: "Clean invoices", bank_change: "Bank-detail swap", duplicate: "Duplicate invoice", injection: "Prompt injection",
+  phishing_link: "Phishing link", benign_link: "Legitimate link",
+};
+const ROLE_NAME: Record<string, string> = {
+  classifier: "Injection classifier", coder_extract: "Code writer · extract", coder_validate: "Code writer · validate",
+  planner: "Planner", safety: "Safety summary", vision: "Vision (link screenshots)",
+};
 
 export function Metrics() {
   const [m, setM] = React.useState<any>(null);
-  React.useEffect(() => { api.metrics().then(setM).catch(() => {}); }, []);
-  if (!m) return <div className="muted">loading…</div>;
-  const e = m.eval;
+  React.useEffect(() => { api.metrics().then(setM).catch(() => setM({})); }, []);
+  const e = m?.eval;
 
   return (
     <div>
-      <h1>Metrics</h1>
-      <div className="muted" style={{ marginBottom: 16 }}>Live counters from this workspace, plus the latest evaluation: labelled invoices sent through this live site.</div>
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h2>Live</h2>
-        <div className="tiles">
-          <Tile n={m.live.llm_calls} l="LLM calls" />
-          <Tile n={`$${(m.live.llm_cost_usd ?? 0).toFixed(4)}`} l="inference cost" />
-          <Tile n={m.live.invoices_posted} l="invoices posted" />
-        </div>
-      </div>
-      {e ? (
-        <div className="card">
-          <h2>Evaluation <span className="muted" style={{ fontSize: 12 }}>run {e.run_date || e.date || ""}{e.n ? ` · ${e.n} invoices` : ""}</span></h2>
-          <div className="tiles" style={{ marginBottom: 16 }}>
-            <Tile n={pct(e.outcome_accuracy)} l="outcome accuracy" />
-            <Tile n={pct(e.false_positive_rate)} l="false positives (clean)" />
-            {e.attacks_caught && <Tile n={`${e.attacks_caught.caught}/${e.attacks_caught.total}`} l="attacks caught" />}
-            <Tile n={secs(e.latency_p50_ms)} l="latency p50" />
-            <Tile n={secs(e.latency_p95_ms)} l="latency p95" />
-            <Tile n={e.cost_per_invoice_usd != null ? `$${e.cost_per_invoice_usd}` : "—"} l="cost / invoice" />
-            <Tile n={e.drills_passed != null ? `${e.drills_passed}/${e.drills_total}` : "—"} l="drills passed" />
+      <PageHeader title="Metrics" sub="The latest evaluation: labelled invoices, attacks included, sent through this live site. Below it are the live counters for your own demo session." />
+
+      {!m && <div className="stats">{[0, 1, 2, 3].map((i) => <div key={i} className="stat"><Sk w={70} h={24} /><div style={{ height: 8 }} /><Sk w={100} h={11} /></div>)}</div>}
+
+      {m && e && (
+        <>
+          <div className="row" style={{ marginBottom: 10, gap: 8 }}>
+            <Gauge size={16} className="muted" />
+            <h2>Evaluation</h2>
+            <span className="muted" style={{ fontSize: 12.5 }}>run {e.run_date}{e.n ? ` · ${e.n} invoices` : ""}{e.duration_s ? ` · ${Math.round(e.duration_s / 60)} min` : ""}</span>
           </div>
-          {e.per_class && (
-            <table>
-              <thead><tr><th>Class</th><th>Recall</th><th>Precision</th><th>N</th></tr></thead>
-              <tbody>
-                {Object.entries(e.per_class).map(([k, v]: any) => (
-                  <tr key={k}><td>{k}</td><td>{pct(v.recall)}</td><td>{pct(v.precision)}</td><td className="mono">{v.n}</td></tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="stats" style={{ marginBottom: 20 }}>
+            <Stat good v={<CountUp to={(e.outcome_accuracy ?? 0) * 100} suffix="%" />} l="correct outcome" />
+            {e.attacks_caught && <Stat good v={<><CountUp to={e.attacks_caught.caught} /><small>/{e.attacks_caught.total}</small></>} l="attacks caught" />}
+            <Stat v={pct(e.false_positive_rate)} l="false positives on clean invoices" />
+            <Stat v={secs(e.latency_p50_ms)} l="median time per invoice" />
+            <Stat v={secs(e.latency_p95_ms)} l="p95 time per invoice" />
+            <Stat v={e.cost_per_invoice_usd != null ? `$${Number(e.cost_per_invoice_usd).toFixed(4)}` : "—"} l="inference cost per invoice" />
+            {e.drills_passed != null && <Stat good v={<><CountUp to={e.drills_passed} /><small>/{e.drills_total}</small></>} l="red-team drills passed" />}
+          </div>
+
+          <div className="split-even" style={{ marginBottom: 20 }}>
+            {e.per_class && (
+              <div className="panel">
+                <div className="panel-h"><h2>By invoice type</h2><span className="sub">recall</span></div>
+                <div className="panel-b stack" style={{ gap: 14 }}>
+                  {Object.entries(e.per_class).map(([k, v]: any, i) => (
+                    <div key={k}>
+                      <div className="row" style={{ marginBottom: 6, fontSize: 13.5 }}>
+                        <span style={{ fontWeight: 540 }}>{CLASS_NAME[k] || k}</span>
+                        <span className="muted mono" style={{ fontSize: 12 }}>n={v.n}</span>
+                        <span className="grow" />
+                        <span className="mono num">{pct(v.recall)}</span>
+                      </div>
+                      <div className="bar"><motion.i initial={{ scaleX: 0 }} whileInView={{ scaleX: v.recall ?? 0 }} viewport={{ once: true }} transition={{ duration: 0.8, ease, delay: i * 0.06 }} /></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {e.llm_latency_by_role && (
+              <div className="panel">
+                <div className="panel-h"><h2>Model calls by role</h2><span className="sub">median latency</span></div>
+                <div className="panel-b stack" style={{ gap: 14 }}>
+                  {(() => {
+                    const rows = Object.entries(e.llm_latency_by_role) as [string, any][];
+                    const max = Math.max(...rows.map(([, v]) => v.p50_ms || 0), 1);
+                    return rows.map(([k, v], i) => (
+                      <div key={k}>
+                        <div className="row" style={{ marginBottom: 6, fontSize: 13.5 }}>
+                          <span style={{ fontWeight: 540 }}>{ROLE_NAME[k] || k}</span>
+                          <span className="muted mono" style={{ fontSize: 12 }}>{v.calls} calls{v.failed ? ` · ${v.failed} failed` : ""}</span>
+                          <span className="grow" />
+                          <span className="mono num">{secs(v.p50_ms)}</span>
+                        </div>
+                        <div className="bar"><motion.i style={{ background: "var(--accent)" }} initial={{ scaleX: 0 }} whileInView={{ scaleX: (v.p50_ms || 0) / max }} viewport={{ once: true }} transition={{ duration: 0.8, ease, delay: i * 0.06 }} /></div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {e.per_outcome && (
+            <div className="panel" style={{ marginBottom: 20 }}>
+              <div className="panel-h"><h2>By outcome</h2></div>
+              <div className="table-wrap">
+                <table className="t">
+                  <thead><tr><th>Outcome</th><th className="r">Expected</th><th className="r">Predicted</th><th className="r">Recall</th><th className="r">Precision</th></tr></thead>
+                  <tbody>
+                    {Object.entries(e.per_outcome).map(([k, v]: any) => (
+                      <tr key={k}><td style={{ fontWeight: 540 }}>{k}</td><td className="r mono num">{v.n_true}</td><td className="r mono num">{v.n_predicted}</td><td className="r mono num">{pct(v.recall)}</td><td className="r mono num">{pct(v.precision)}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
-        </div>
-      ) : (
-        <div className="card muted">No evaluation run yet. Run <span className="mono">python eval/run.py</span> to populate this.</div>
+        </>
+      )}
+      {m && !e && <div className="panel panel-b muted" style={{ marginBottom: 20 }}>No evaluation has been run yet. Run <span className="mono">python eval/run.py</span> to fill this page.</div>}
+
+      {m?.live && (
+        <>
+          <div className="row" style={{ marginBottom: 10, gap: 8 }}><Activity size={16} className="muted" /><h2>Your session</h2><span className="muted" style={{ fontSize: 12.5 }}>live, this demo workspace only</span></div>
+          <div className="stats">
+            <Stat v={m.live.llm_calls ?? 0} l="model calls" />
+            <Stat v={`$${(m.live.llm_cost_usd ?? 0).toFixed(4)}`} l="inference cost" />
+            <Stat v={m.live.invoices_posted ?? 0} l="invoices posted" />
+          </div>
+        </>
       )}
     </div>
   );
 }
 
-const Tile = ({ n, l }: { n: any; l: string }) => <div className="tile card" style={{ padding: 14 }}><div className="n">{n}</div><div className="l">{l}</div></div>;
-const secs = (ms: any) => (ms == null ? "—" : `${(ms / 1000).toFixed(1)} s`);
-const pct = (x: any) => (x == null ? "—" : `${Math.round(x * 100)}%`);
+function Stat({ v, l, good }: { v: React.ReactNode; l: string; good?: boolean }) {
+  return <div className={`stat ${good ? "good" : ""}`}><div className="v">{v}</div><div className="l">{l}</div></div>;
+}
