@@ -115,3 +115,17 @@ def test_metrics_live_counters_are_per_workspace(inbox):
     other.post("/api/session")
     theirs = other.get("/api/metrics").json()["live"]
     assert theirs == {"llm_calls": 0, "llm_cost_usd": 0, "invoices_posted": 0}
+
+
+def test_process_all_runs_in_parallel_and_never_double_queues():
+    """A second 'Process inbox' click while the first batch runs must not queue anything twice."""
+    from airlock_api import orchestrator
+    client.post("/api/workspace/reset")
+    first = client.post("/api/inbox/process-all").json()["started"]
+    second = client.post("/api/inbox/process-all").json()["started"]
+    assert len(first) == 6 and not set(first) & set(second)
+    deadline = time.time() + 120
+    while time.time() < deadline and any(orchestrator.is_inflight(i) for i in first):
+        time.sleep(0.3)
+    statuses = {client.get(f"/api/invoices/{i}").json()["invoice"]["status"] for i in first}
+    assert statuses <= TERMINAL, statuses

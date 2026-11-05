@@ -8,7 +8,7 @@ import time
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 
-from fastapi import BackgroundTasks, Cookie, FastAPI, HTTPException, Request, Response, UploadFile
+from fastapi import Cookie, FastAPI, HTTPException, Request, Response, UploadFile
 from fastapi.responses import JSONResponse
 from sqlmodel import select
 from sse_starlette.sse import EventSourceResponse
@@ -60,8 +60,11 @@ def _inv_or_404(inv_id: str, ws: str) -> Invoice:
 
 
 def _public(inv: Invoice) -> dict:
+    from .orchestrator import is_inflight
     d = to_dict(inv)
     d.pop("file_key", None)
+    # Waiting for a free pipeline worker (several visitors at once): show it, rather than a silent "new".
+    d["queued"] = inv.status == "NEW" and is_inflight(inv.id)
     return d
 
 
@@ -133,27 +136,24 @@ async def upload(req: Request, resp: Response, file: UploadFile, airlock_ws: str
 
 
 @app.post("/api/invoices/{inv_id}/process")
-def process_one(inv_id: str, bg: BackgroundTasks, req: Request, resp: Response, airlock_ws: str | None = Cookie(default=None)):
+def process_one(inv_id: str, req: Request, resp: Response, airlock_ws: str | None = Cookie(default=None)):
     ws = _ws(req, resp, airlock_ws)
     inv = _inv_or_404(inv_id, ws)
-    if inv.status in ("SCANNING", "EXTRACTING", "VALIDATING", "INSPECTING_LINKS", "DECIDING"):
+    from .orchestrator import is_inflight, submit
+    if inv.status in ("SCANNING", "EXTRACTING", "VALIDATING", "INSPECTING_LINKS", "DECIDING") or is_inflight(inv_id):
         raise HTTPException(409, "already processing")
-    from .orchestrator import process
-    bg.add_task(process, inv_id)
+    submit(inv_id)
     return {"ok": True, "invoice_id": inv_id}
 
 
 @app.post("/api/inbox/process-all")
-def process_all(bg: BackgroundTasks, req: Request, resp: Response, airlock_ws: str | None = Cookie(default=None)):
+def process_all(req: Request, resp: Response, airlock_ws: str | None = Cookie(default=None)):
     ws = _ws(req, resp, airlock_ws)
-    from .orchestrator import process
-    started = []
+    from .orchestrator import submit
     with session() as s:
-        rows = s.exec(select(Invoice).where(Invoice.workspace_id == ws, Invoice.status == "NEW").order_by(Invoice.order))
-        for inv in rows:
-            bg.add_task(process, inv.id)
-            started.append(inv.id)
-    return {"started": started}
+        ids = [inv.id for inv in s.exec(select(Invoice).where(Invoice.workspace_id == ws, Invoice.status == "NEW")
+                                         .order_by(Invoice.order))]
+    return {"started": [i for i in ids if submit(i)]}
 
 
 @app.get("/api/invoices/{inv_id}/events")

@@ -29,6 +29,8 @@ class Settings:
     llm_temperature: float = field(default_factory=lambda: float(_env("LLM_TEMPERATURE", "0.1")))
     llm_timeout_s: float = field(default_factory=lambda: float(_env("LLM_TIMEOUT_S", "90")))  # code-writing + vision
     # safety / classifier / planner: short calls, so a long wait means a stuck call -> fall back sooner
+    # Invoices processed at once across ALL visitors (bounds load on the sandbox VM and the inference API).
+    pipeline_workers: int = field(default_factory=lambda: int(_env("PIPELINE_WORKERS", "6")))
     llm_fast_timeout_s: float = field(default_factory=lambda: float(_env("LLM_FAST_TIMEOUT_S", "45")))
     llm_max_retries: int = field(default_factory=lambda: int(_env("LLM_MAX_RETRIES", "1")))
     llm_max_tokens: int = field(default_factory=lambda: int(_env("LLM_MAX_TOKENS", "6000")))

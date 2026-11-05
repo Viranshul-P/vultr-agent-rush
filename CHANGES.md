@@ -240,3 +240,24 @@ still points at the old one. The deploy script now replaces the directory's cont
 
 Tests: API 73.
 
+---
+
+## 12. 2026-11-05: parallel "Process inbox" and a multi-visitor load test (PR #5)
+
+"Process inbox" ran a visitor's six invoices one after another. A global pool (`PIPELINE_WORKERS`, default 6) now
+runs them in parallel and caps the total when several judges click at once; an in-flight set stops a double click
+from queueing an invoice twice; invoices waiting for a worker show **Queued…** instead of a silent "new".
+Duplicate detection is unaffected (workspace priors are only POSTED, human-approved invoices).
+
+Load test on the live site (each visitor clicks Process inbox at the same moment; golden inbox of 6):
+
+| | Before (one at a time per visitor, no cap) | After (pool of 6) |
+|---|---|---|
+| 1 visitor, all six done | ~150–180 s | **61 s** |
+| 5 visitors at once: correct / ERROR | 30/30, 0 | **30/30, 0** |
+| 5 visitors at once: per-inbox time | 165–198 s (avg 179 s) | 56–186 s (avg 127 s) |
+
+A cap of 3 was tried first on paper and dropped: it would have made 5 simultaneous visitors slower (~250 s).
+Rollback point on VM-1: `~/airlock-backup-20261105-pre-parallel.tgz`, image `deploy-api:20261105-pre-parallel`.
+Tests: API 74.
+
