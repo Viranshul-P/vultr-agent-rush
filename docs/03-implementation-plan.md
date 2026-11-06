@@ -308,7 +308,7 @@ Keep the demo URL live through judging (could be 2–4 weeks). Downsize VM-2 if 
 | 0:50–1:40 | Clean invoice: the code the model wrote, the sandbox run (container ID, limits, destroyed timestamp), 3-way match, human approval, ERP posted. The retry on invoice #2. |
 | **1:40–2:40** | **Containment moments:** #5 injection (show the hostile code the model generated, then empty env, no network, egress blocked, approval unreachable) → **"Blast radius: 0"**; #6 phishing link (screenshot, vision verdict, quarantined download, CPU cap, container destroyed) |
 | 2:40–3:05 | #4 bank change and #3 duplicate, quickly |
-| 3:05–3:35 | Proof: verify a signed receipt, the Red Team page at 10/10, the metrics page |
+| 3:05–3:35 | Proof: verify a signed receipt, the Red Team page at 11/11, the metrics page |
 | 3:35–4:15 | Business: target customer, pricing, cost per invoice, competition, roadmap |
 | 4:15–4:30 | Team, the Vultr services list, close |
 
@@ -323,7 +323,7 @@ Overview · Demo URL + video link · ✅ Vultr services used (the list in §3) �
 ### 11.4 lablab form drafts
 - **Title:** Airlock
 - **Short description:** An AP agent that opens every invoice in a disposable Vultr sandbox, so a malicious invoice can fool the AI but can't reach your money, secrets or servers.
-- **Tags:** Vultr, Vultr Serverless Inference, AI Agents, Docker, gVisor, Playwright, FastAPI, Next.js, Fintech, Cybersecurity
+- **Tags:** Vultr, Vultr Serverless Inference, AI Agents, Docker, gVisor, Playwright, FastAPI, React, Fintech, Cybersecurity (final copy: docs/submission/README.md)
 - **Demo platform:** Vultr Cloud Compute · **App URL:** our domain
 
 ---

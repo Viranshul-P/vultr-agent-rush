@@ -664,7 +664,7 @@ Design: clean light/dark, monospace for code/IDs, one accent colour, red reserve
 - [ ] Show the **empty env + network-unreachable** result and the **CONTAINED · Blast radius 0** banner
 - [ ] Show the phishing screenshot, quarantined download hash, CPU cap
 - [ ] Show the Red Team page at 11/11 and the metrics page with the run date
-- [ ] Say the Vultr services aloud: Cloud Compute, VX1, Serverless Inference, VPC, Object Storage, Container Registry, Managed PostgreSQL
+- [ ] Say the Vultr services aloud: Cloud Compute, Serverless Inference, VPC + Firewall Groups, Object Storage, Container Registry, Managed PostgreSQL (VX1 was dropped; gVisor runs on regular Cloud Compute)
 - [ ] Final cut 4:00–4:59; captions burned in; MP4
 
 ## Part 17 · Definition of done (any ticket)
