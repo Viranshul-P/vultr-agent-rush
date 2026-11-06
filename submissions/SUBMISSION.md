@@ -8,7 +8,7 @@ Everything for the lablab.ai submission (Vultr: Agent Rush Hackathon, Challenge 
 
 | File | What it is | Form field |
 |---|---|---|
-| `airlock-demo.mp4` | Demo video, 4:24, 1920×1080, with voice-over (71 MB, **not in git**) | Video: upload it, or paste a YouTube link |
+| `airlock-demo.mp4` | Demo video, 4:24, 1920×1080, with voice-over (71 MB, **not in git**) | Video: https://youtu.be/fOS1BW82LaI |
 | `airlock-slides.pdf` | 10-slide deck | Slides / presentation |
 | `cover.png` | Cover image, 16:9, 1920×1080 | Cover image / thumbnail |
 | `screenshots/inbox.png` | Inbox after **Process inbox**, with the outcome strip | Screenshots |
@@ -21,14 +21,11 @@ The video only exists on the laptop that rendered it. To rebuild it, see [`video
 
 ## Steps, in order
 
-1. **Snapshot both VMs** in the Vultr console (`airlock-control` and `airlock-sandbox`) as a rollback point. Set a **billing alert** too. The API key only accepts allowlisted IPs, so this has to be done in the console.
-2. **Export the slides:** open the deck at https://claude.ai/artifact/XdKFEb8LgMXrLzRCf6vw5V (private, owner's account), click **Download**, then **PDF**, and save it here as `airlock-slides.pdf`.
-3. **Upload the video** to YouTube (unlisted is fine) and copy the link.
-4. **Fill in the links** at the top of the root `README.md`: replace the two `_link_` placeholders (video, slides).
-5. **Move the submission tag** to the final commit:
-   ```bash
-   git tag -fa v1.0-submission -m "Airlock submission" HEAD && git push -f origin v1.0-submission
-   ```
+1. **Optional: snapshot both VMs** in the Vultr console (`airlock-control` and `airlock-sandbox`) as a rollback point, and set a **billing alert**. The API key only accepts allowlisted IPs, so this has to be done in the console.
+2. ✅ Slides exported: `airlock-slides.pdf` (in git) and `airlock-slides.pptx` (local only).
+3. ✅ Video uploaded: https://youtu.be/fOS1BW82LaI
+4. ✅ README links filled in.
+5. ✅ Tag `v1.0-submission` on the final commit.
 6. **Check that the live demo is up:** https://app.beyonders.duckdns.org/api/health should return `"ok":true`.
 7. **Fill in the lablab.ai form** with the text below and upload the files from this folder.
 8. **After submitting:** keep the demo live through judging. Check `/api/health` once a day and don't change production.
