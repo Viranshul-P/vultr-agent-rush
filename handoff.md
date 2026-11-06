@@ -44,7 +44,7 @@ The full local stack command is in the README ("Run it locally").
 1e. ✅ 6 Nov: full review + the team's 37-check QA PDF run (CHANGES.md §14). Fixed a double-payment bug (reprocessing a POSTED invoice), workspace scoping of runs, and UI issues; deployed and re-tested live: 36/37 pass, OPS-02 (snapshots) open.
    **Development is done.** Everything below is submission or ops work.
 2. **Snapshot both VMs** before recording the video, and write down how to roll back.
-3. **Submission assets:** video (4:30 with the containment moments; plan in docs/03 §11.1 and the checklist in docs/04 Part 16), 10-slide PDF, 16:9 cover image, lablab form (drafts in docs/03 §11.4). Fill in the video/slides links and the containment timestamp at the top of README.md.
+3. **Submission assets** (kit ready in [docs/submission](docs/submission/README.md): 10-slide deck as a claude.ai artifact, cover.png, screenshots, video script, lablab form text; still to do: set the price on slide 9, export the PDF, record the video): video (4:30 with the containment moments; plan in docs/03 §11.1 and the checklist in docs/04 Part 16), 10-slide PDF, 16:9 cover image, lablab form (drafts in docs/03 §11.4). Fill in the video/slides links and the containment timestamp at the top of README.md.
 4. **Vultr billing alert** (console only).
 5. Optional: push the sandbox images to the registry and pin `IMAGE_*` to registry digests.
 6. Optional: restrict the (rotated) Vultr API key's access list to known IPs; add an ACME email to the Caddyfile for certificate expiry notices.
