@@ -9,7 +9,7 @@ Everything for the lablab.ai submission (Vultr: Agent Rush Hackathon, Challenge 
 | File | What it is | Form field |
 |---|---|---|
 | `airlock-demo.mp4` | Demo video, 4:24, 1920×1080, with voice-over (71 MB, **not in git**) | Video: upload it, or paste a YouTube link |
-| `airlock-slides.pdf` | 10-slide deck *(add it: see step 2)* | Slides / presentation |
+| `airlock-slides.pdf` | 10-slide deck | Slides / presentation |
 | `cover.png` | Cover image, 16:9, 1920×1080 | Cover image / thumbnail |
 | `screenshots/inbox.png` | Inbox after **Process inbox**, with the outcome strip | Screenshots |
 | `screenshots/injection.png` | Prompt-injection invoice, quarantined, blast radius 0 | Screenshots |
@@ -66,9 +66,9 @@ On the live site, 40 labelled invoices (22 attacks) got 40/40 correct outcomes w
 
 **Repository:** https://github.com/Viranshul-P/vultr-agent-rush
 
-**Video:** `<YouTube link>`
+**Video:** https://youtu.be/fOS1BW82LaI
 
-**Slides:** `<link, or upload airlock-slides.pdf>`
+**Slides:** https://github.com/Viranshul-P/vultr-agent-rush/blob/main/submissions/airlock-slides.pdf (or upload airlock-slides.pdf)
 
 **Team Beyonders:** Viranshul (Viranshul-P), Kuldeep (Kuldeeep18), Priyanshu Doshi (Priyanshu-byte-coder)
 
