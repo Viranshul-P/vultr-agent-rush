@@ -73,7 +73,7 @@ export function OutcomeStrip({ invoices }: { invoices: Invoice[] }) {
 }
 
 /* ---------- run timeline: every sandbox container, created to destroyed ---------- */
-const KIND_LABEL: Record<string, string> = { scan: "Scan", extract: "Extract", validate: "Validate", browser: "Browser" };
+const KIND_LABEL: Record<string, string> = { scan: "Scan", extract: "Extract", validate: "Validate", browse: "Browser", browser: "Browser" };
 
 export function RunTimeline({ runs, onOpen }: { runs: Run[]; onOpen: (id: string) => void }) {
   const rows = runs.filter((r) => r.created_at).map((r) => {
@@ -97,7 +97,7 @@ export function RunTimeline({ runs, onOpen }: { runs: Run[]; onOpen: (id: string
             title={`${KIND_LABEL[r.kind] || r.kind}${r.attempt > 1 ? ` #${r.attempt}` : ""}: ${(r.duration_ms / 1000).toFixed(1)} s, ${r.tier}${r.killed_reason ? `, killed: ${r.killed_reason}` : ""}. Click for details.`}>
             <span className="g-k">{KIND_LABEL[r.kind] || r.kind}{r.attempt > 1 ? ` #${r.attempt}` : ""}</span>
             <span className="g-track">
-              <motion.i className={r.killed_reason ? "bad" : r.kind === "browser" ? "br" : ""}
+              <motion.i className={r.killed_reason ? "bad" : r.kind === "browse" || r.kind === "browser" ? "br" : ""}
                 style={{ left: `${left}%` }} initial={{ width: 0 }} animate={{ width: `${width}%` }} transition={{ duration: 0.6, ease, delay: i * 0.05 }} />
             </span>
             <span className="g-d mono num">{(r.duration_ms / 1000).toFixed(1)} s</span>
