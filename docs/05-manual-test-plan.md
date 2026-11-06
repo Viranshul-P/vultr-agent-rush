@@ -54,7 +54,7 @@ flowchart LR
 | 2.9 | Open **Brightline: 'second notice'** | **Blocked**, by R5 (likely duplicate). |
 | 2.10 | On any blocked or quarantined invoice | There's no Approve button. Every one of them has a **Signed receipt** that verifies. |
 | 2.11 | Open `/red-team` and click **Run all drills** | Each drill pulses, then turns green. The score reads **11/11 contained** and the tier reads `T1-gvisor`. Each row shows Attack, Expect and Result. |
-| 2.12 | Open `/metrics` | The ring reads 100%, with 40/40 correct and 22/22 attacks caught. The drills stat reads 11/11 (from the last run). Under By outcome, paired bars compare Expected with Airlock decided. Model calls by role shows bars, and Your session shows this window's counts. |
+| 2.12 | Open `/metrics` | The ring reads 100%, with 40/40 correct and 22/22 attacks caught. The drills stat reads 11/11. Under By outcome, paired bars compare Expected with Airlock decided. Model calls by role shows bars, and Your session shows this window's counts. |
 
 ---
 
@@ -88,6 +88,7 @@ flowchart LR
 ### Security checks you can do from the browser
 - [ ] Open a run URL from window A (`/api/runs/<id>`, from the drawer) in window B: **404** (it used to return 200).
 - [ ] The same goes for a screenshot URL and for `POST /api/receipts/<id>/verify` from another window: 404.
+- [ ] Clicking process again on a POSTED or BLOCKED invoice (`POST /api/invoices/<id>/process`) is refused with 409, and the Ledger still has one posting.
 - [ ] Approving the same invoice twice is refused, and so is approving a rejected one ("invoice is REJECTED, not awaiting approval").
 
 ### Look and feel
@@ -110,6 +111,9 @@ flowchart LR
 
 | Area | Bug | Fix |
 |---|---|---|
+| API (payments) | Processing an already-POSTED invoice again reset it to awaiting approval, so it could be approved and **posted a second time** (found by FLOW-08 in the team's QA PDF) | Only NEW (or ERROR) invoices can be processed, and approval is refused if a posting already exists; two tests |
+| All pages | No favicon, so every page load logged a 404 in the console | Inline SVG favicon |
+| Red Team | A drill result couldn't be traced to its sandbox run | Each row shows its run id, container and tier |
 | Invoice page | An invoice that errored showed every sandbox stage as passed, and never said why it stopped | The pipeline marks the stage that failed, and an amber callout gives the reason |
 | API | `GET /api/receipts/pubkey` returned 404 because the `/{inv_id}` route caught it first | Route order fixed, with a test |
 | API (privacy) | Another visitor could read sandbox runs (model code, output), screenshots and receipt verification by id | All three are now limited to the visitor's own workspace, with a test |
@@ -117,7 +121,6 @@ flowchart LR
 | Inbox | The intro callout said "7 demo invoices… two are clean, four are attacks" after one upload | Counts demo invoices and uploads separately |
 | Ledger | The empty state promised a receipt link, but rows had none; times were UTC with no zone; there was no vendor column | Vendor, invoice link, receipt link and local time added |
 | Overview | Switching replay tabs briefly showed the previous scenario's final state | The scenario and step now reset together |
-| Overview / Metrics | The "drills contained" figure never appeared (the eval file has no drill count) | Read from the last recorded drill results |
 | Invoice page | The screenshot viewer couldn't be closed with Esc and had no close button | Both added |
 | Invoice page | Retry events started mid-word ("e 52, in __init__…") | Shows the last full error line |
 | README | The local-run `PYTHONPATH` uses `:` and fails on Windows | Note added: use `;` on Windows |

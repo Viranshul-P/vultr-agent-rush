@@ -161,3 +161,35 @@ def test_receipt_pubkey_route_is_reachable():
     r = client.get("/api/receipts/pubkey")
     assert r.status_code == 200 and r.json()["algorithm"] == "Ed25519"
 
+
+
+def test_a_decided_invoice_cannot_be_reprocessed_or_paid_twice(inbox):
+    """Re-running a POSTED invoice used to reset it to AWAIT_APPROVAL, so it could be approved and posted again."""
+    client.post("/api/workspace/reset")
+    inv = next(i for i in client.get("/api/invoices").json()["invoices"] if i["filename"] == "01_brightline_clean.pdf")
+    client.post(f"/api/invoices/{inv['id']}/process")
+    for _ in range(120):
+        st = client.get(f"/api/invoices/{inv['id']}").json()["invoice"]["status"]
+        if st == "AWAIT_APPROVAL":
+            break
+        time.sleep(0.25)
+    assert client.post(f"/api/invoices/{inv['id']}/decision", json={"decision": "approve"}).status_code == 200
+    r = client.post(f"/api/invoices/{inv['id']}/process")
+    assert r.status_code == 409 and "POSTED" in r.json()["detail"]
+    assert client.get(f"/api/invoices/{inv['id']}").json()["invoice"]["status"] == "POSTED"
+    mine = [p for p in client.get("/api/erp/postings").json()["postings"] if p["invoice_id"] == inv["id"]]
+    assert len(mine) == 1
+
+
+def test_approval_refused_when_a_posting_already_exists():
+    from airlock_api.db import ErpPosting, Invoice, session
+    client.post("/api/workspace/reset")
+    inv_id = client.get("/api/invoices").json()["invoices"][0]["id"]
+    with session() as s:
+        inv = s.get(Invoice, inv_id)
+        inv.status = "AWAIT_APPROVAL"
+        s.add(inv)
+        s.add(ErpPosting(workspace_id=inv.workspace_id, invoice_id=inv_id, vendor_id="V", invoice_number="X", amount="1", currency="USD"))
+        s.commit()
+    r = client.post(f"/api/invoices/{inv_id}/decision", json={"decision": "approve"})
+    assert r.status_code == 409 and "already been posted" in r.json()["detail"]

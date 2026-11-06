@@ -8,7 +8,6 @@ import {
 import { api, Invoice, Status } from "../api";
 import { STATUS_LABEL } from "../pipeline";
 import { CountUp, Pipeline, StatusBadge, ease } from "../ui";
-import { useDrillScore } from "./RedTeam";
 
 /* ---------- hero walkthrough: the six demo invoices' real outcomes, replayed ---------- */
 type Scenario = {
@@ -169,7 +168,6 @@ export function Home() {
   const [m, setM] = React.useState<any>(null);
   React.useEffect(() => { api.metrics().then(setM).catch(() => {}); }, []);
   const e = m?.eval;
-  const drills = useDrillScore();
 
   return (
     <div>
@@ -190,7 +188,7 @@ export function Home() {
             <motion.div className="proof" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.3 }}>
               <span><CheckCircle2 /><b>{Math.round(e.outcome_accuracy * 100)}%</b> correct on {e.n} invoices</span>
               {e.attacks_caught && <span><ShieldCheck /><b>{e.attacks_caught.caught}/{e.attacks_caught.total}</b> attacks caught</span>}
-              {drills && <span><Swords /><b>{drills.passed}/{drills.total}</b> drills contained</span>}
+              {e.drills_passed != null && <span><Swords /><b>{e.drills_passed}/{e.drills_total}</b> drills contained</span>}
             </motion.div>
           )}
         </div>

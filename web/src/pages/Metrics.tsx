@@ -4,7 +4,6 @@ import { Activity, Gauge } from "lucide-react";
 import { api } from "../api";
 import { CountUp, PageHeader, Sk, ease, pct, secs } from "../ui";
 import { PairedBars, Ring } from "../viz";
-import { useDrillScore } from "./RedTeam";
 
 const CLASS_NAME: Record<string, string> = {
   clean: "Clean invoices", bank_change: "Bank-detail swap", duplicate: "Duplicate invoice", injection: "Prompt injection",
@@ -19,7 +18,6 @@ export function Metrics() {
   const [m, setM] = React.useState<any>(null);
   React.useEffect(() => { api.metrics().then(setM).catch(() => setM({})); }, []);
   const e = m?.eval;
-  const drills = useDrillScore();
 
   return (
     <div>
@@ -44,7 +42,7 @@ export function Metrics() {
             <Stat v={secs(e.latency_p50_ms)} l="median time per invoice" />
             <Stat v={secs(e.latency_p95_ms)} l="p95 time per invoice" />
             <Stat v={e.cost_per_invoice_usd != null ? `$${Number(e.cost_per_invoice_usd).toFixed(4)}` : "—"} l="inference cost per invoice" />
-            {drills && <Stat good={drills.passed === drills.total} v={<><CountUp to={drills.passed} /><small>/{drills.total}</small></>} l="red-team drills contained (last run)" />}
+            {e.drills_passed != null && <Stat good v={<><CountUp to={e.drills_passed} /><small>/{e.drills_total}</small></>} l="red-team drills passed" />}
           </div>
 
           <div className="split-even" style={{ marginBottom: 20 }}>
