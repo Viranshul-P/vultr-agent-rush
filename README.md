@@ -84,7 +84,7 @@ A mock LLM and an in-process **dev-only** runner let the whole pipeline run on a
 
 ```bash
 # backend tests (policy, checks, runner, full end-to-end pipeline)
-cd api && uv sync && uv run pytest -q          # 75 passing
+cd api && uv sync && uv run pytest -q          # 76 passing
 cd ../runner && uv sync && uv run pytest -q     # 11 passing
 
 # run the API with mock LLM + in-process runner, then open the web app
@@ -94,6 +94,8 @@ RUNNER_URL=inprocess RUNNER_TOKEN=$(python -c "print('x'*40)") RUNNER_ALLOW_UNSA
 RUNS_ROOT="$PWD/../var/runs" LLM_MODE=mock DOMAIN=localhost \
 PYTHONPATH="../sandbox-images/py-sandbox:../seed:../runner:." \
 uv run uvicorn airlock_api.main:app --port 8000
+
+# Windows (Git Bash): separate PYTHONPATH entries with ';' instead of ':'
 
 cd ../web && npm install && npm run dev        # http://localhost:5173
 # or develop the UI against the live API: API_TARGET=https://app.beyonders.duckdns.org npm run dev

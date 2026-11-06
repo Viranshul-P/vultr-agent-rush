@@ -137,8 +137,10 @@ def test_run_screenshot_serves_only_listed_pngs():
     png = b"\x89PNG\r\n\x1a\n" + b"0" * 32
     store.put("runs/t/shot.png", png, "image/png")
     store.put("runs/t/payload.bin", b"MZ evil", "application/octet-stream")
+    client.post("/api/session")
+    inv_id = client.get("/api/invoices").json()["invoices"][0]["id"]
     with session() as s:
-        s.add(Run(id="run-shot-test", invoice_id=None, kind="browse", attempt=1, tier="test", container_id="c", image_digest="d",
+        s.add(Run(id="run-shot-test", invoice_id=inv_id, kind="browse", attempt=1, tier="test", container_id="c", image_digest="d",
                   artifacts=[{"name": "shot.png", "key": "runs/t/shot.png"}, {"name": "payload.bin", "key": "runs/t/payload.bin"}]))
         s.commit()
     r = client.get("/api/runs/run-shot-test/screenshots/shot.png")
@@ -146,3 +148,16 @@ def test_run_screenshot_serves_only_listed_pngs():
     assert client.get("/api/runs/run-shot-test/screenshots/payload.bin").status_code == 404
     assert client.get("/api/runs/run-shot-test/screenshots/other.png").status_code == 404
     assert client.get("/api/runs/nope/screenshots/shot.png").status_code == 404
+    # another visitor can't read this workspace's runs, screenshots or receipts
+    other = TestClient(app)
+    other.post("/api/session")
+    assert other.get("/api/runs/run-shot-test").status_code == 404
+    assert other.get("/api/runs/run-shot-test/screenshots/shot.png").status_code == 404
+    assert other.post(f"/api/receipts/{inv_id}/verify").status_code == 404
+    assert client.get("/api/runs/run-shot-test").status_code == 200
+
+
+def test_receipt_pubkey_route_is_reachable():
+    r = client.get("/api/receipts/pubkey")
+    assert r.status_code == 200 and r.json()["algorithm"] == "Ed25519"
+

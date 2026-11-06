@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
-import { Building2, Landmark, Lock } from "lucide-react";
+import { Building2, FileSignature, Landmark, Lock } from "lucide-react";
 import { api } from "../api";
 import { Empty, PageHeader, Sk, ease } from "../ui";
 
@@ -31,13 +31,15 @@ export function Erp() {
         ) : (
           <div className="table-wrap">
             <table className="t">
-              <thead><tr><th>Posted</th><th>Invoice #</th><th className="r">Amount</th></tr></thead>
+              <thead><tr><th>Posted</th><th>Vendor</th><th>Invoice #</th><th className="r">Amount</th><th style={{ width: 110 }}>Evidence</th></tr></thead>
               <tbody>
                 {postings.map((p, i) => (
                   <motion.tr key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04, duration: 0.3, ease }}>
-                    <td className="mono muted">{p.ts?.slice(0, 19).replace("T", " ")}</td>
-                    <td className="mono">{p.invoice_number}</td>
+                    <td className="mono muted" title={p.ts}>{p.ts ? new Date(p.ts).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""}</td>
+                    <td>{(vendors || []).find((v) => v.id === p.vendor_id)?.name || <span className="mono muted">{p.vendor_id || "—"}</span>}</td>
+                    <td className="mono"><Link to={`/invoices/${p.invoice_id}`}>{p.invoice_number || "—"}</Link></td>
                     <td className="r mono num">{p.currency} {Number(p.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}</td>
+                    <td><Link className="btn ghost sm" to={`/receipts/${p.invoice_id}`}><FileSignature />Receipt</Link></td>
                   </motion.tr>
                 ))}
               </tbody>

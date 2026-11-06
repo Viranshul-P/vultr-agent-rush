@@ -19,10 +19,19 @@ export interface Run {
   peak_mem_mb?: number | null;
 }
 
+// Turn FastAPI's {"detail": "..."} into a readable message, so toasts never show raw JSON.
 const J = async (r: Response) => {
-  if (!r.ok) throw new Error((await r.text()) || r.statusText);
+  if (!r.ok) {
+    const raw = await r.text();
+    let msg = raw;
+    try { const d = JSON.parse(raw)?.detail; if (d) msg = typeof d === "string" ? d : JSON.stringify(d); } catch { /* not JSON */ }
+    throw new Error(msg || r.statusText || `HTTP ${r.status}`);
+  }
   return r.json();
 };
+
+/** A short, human message from anything thrown by the API client. */
+export const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e)).replace(/^Error:\s*/, "").slice(0, 200);
 
 export const api = {
   session: () => fetch("/api/session", { method: "POST" }).then(J),

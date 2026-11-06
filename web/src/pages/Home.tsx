@@ -8,6 +8,7 @@ import {
 import { api, Invoice, Status } from "../api";
 import { STATUS_LABEL } from "../pipeline";
 import { CountUp, Pipeline, StatusBadge, ease } from "../ui";
+import { useDrillScore } from "./RedTeam";
 
 /* ---------- hero walkthrough: the six demo invoices' real outcomes, replayed ---------- */
 type Scenario = {
@@ -46,15 +47,18 @@ function Walkthrough() {
   const seq: Status[] = ["NEW", ...s.path, s.final];
   const atEnd = step >= seq.length - 1;
 
-  React.useEffect(() => { setStep(reduced ? seq.length - 1 : 0); /* eslint-disable-next-line */ }, [idx]);
+  const go = React.useCallback((i: number) => {
+    const n = SCENARIOS[i].path.length + 1;
+    setIdx(i); setStep(reduced ? n : 0);
+  }, [reduced]);
   React.useEffect(() => {
     if (paused) return;
     const t = setTimeout(() => {
       if (!atEnd) setStep((x) => x + 1);
-      else setIdx((i) => (i + 1) % SCENARIOS.length);
+      else go((idx + 1) % SCENARIOS.length);
     }, atEnd ? HOLD_MS : step === 0 ? 500 : STEP_MS);
     return () => clearTimeout(t);
-  }, [step, atEnd, paused]);
+  }, [step, atEnd, paused, idx, go]);
 
   const status = seq[Math.min(step, seq.length - 1)];
   const inv = fakeInvoice(s, status);
@@ -95,7 +99,7 @@ function Walkthrough() {
       </div>
       <div className="demo-foot" role="tablist" aria-label="Demo scenarios">
         {SCENARIOS.map((x, i) => (
-          <button key={x.key} role="tab" aria-selected={i === idx} className={i === idx ? "on" : ""} onClick={() => setIdx(i)}>
+          <button key={x.key} role="tab" aria-selected={i === idx} className={i === idx ? "on" : ""} onClick={() => go(i)}>
             {x.tab}
             <span className="pg">{i === idx && <motion.i key={`${idx}-${paused}`} initial={{ width: paused ? undefined : "0%" }} animate={{ width: paused ? undefined : "100%" }} transition={{ duration: total / 1000, ease: "linear" }} />}</span>
           </button>
@@ -165,6 +169,7 @@ export function Home() {
   const [m, setM] = React.useState<any>(null);
   React.useEffect(() => { api.metrics().then(setM).catch(() => {}); }, []);
   const e = m?.eval;
+  const drills = useDrillScore();
 
   return (
     <div>
@@ -185,7 +190,7 @@ export function Home() {
             <motion.div className="proof" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.3 }}>
               <span><CheckCircle2 /><b>{Math.round(e.outcome_accuracy * 100)}%</b> correct on {e.n} invoices</span>
               {e.attacks_caught && <span><ShieldCheck /><b>{e.attacks_caught.caught}/{e.attacks_caught.total}</b> attacks caught</span>}
-              {e.drills_passed != null && <span><Swords /><b>{e.drills_passed}/{e.drills_total}</b> drills contained</span>}
+              {drills && <span><Swords /><b>{drills.passed}/{drills.total}</b> drills contained</span>}
             </motion.div>
           )}
         </div>

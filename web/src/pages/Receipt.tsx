@@ -2,7 +2,7 @@ import React from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, Download, FileSignature, Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
-import { api } from "../api";
+import { api, errMsg } from "../api";
 import { Callout, CopyButton, Sk, ease } from "../ui";
 
 export function Receipt() {
@@ -21,7 +21,7 @@ export function Receipt() {
 
   React.useEffect(() => {
     if (!id) return;
-    api.receipt(id).then(setData).catch((e) => setErr(String(e)));
+    api.receipt(id).then(setData).catch((e) => setErr(errMsg(e)));
     runVerify();
   }, [id, runVerify]);
 
