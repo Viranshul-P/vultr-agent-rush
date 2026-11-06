@@ -84,7 +84,7 @@ A mock LLM and an in-process **dev-only** runner let the whole pipeline run on a
 
 ```bash
 # backend tests (policy, checks, runner, full end-to-end pipeline)
-cd api && uv sync && uv run pytest -q          # 66 passing
+cd api && uv sync && uv run pytest -q          # 75 passing
 cd ../runner && uv sync && uv run pytest -q     # 11 passing
 
 # run the API with mock LLM + in-process runner, then open the web app
