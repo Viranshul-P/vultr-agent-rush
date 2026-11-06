@@ -83,6 +83,4 @@ On the live site, 40 labelled invoices (22 attacks) got 40/40 correct outcomes w
 | Full write-up and how to run it | [`README.md`](../README.md) |
 | 40-invoice live eval (40/40) | [`eval/results/2026-11-05-1527.json`](../eval/results/2026-11-05-1527.json) |
 | Red-team drills on the Vultr VM (11/11) | [`docs/evidence/drills-vultr-2026-11-04.json`](../docs/evidence/drills-vultr-2026-11-04.json) |
-| QA run (36/37; the open check is the VM snapshots) | [`docs/qa-results-2026-11-06.md`](../docs/qa-results-2026-11-06.md) |
 | What was set up on Vultr | [`CHANGES.md`](../CHANGES.md) |
-| Older submission kit (video plan) | [`docs/submission/README.md`](../docs/submission/README.md) |

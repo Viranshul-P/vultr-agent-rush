@@ -9,7 +9,7 @@ live site, https://app.beyonders.duckdns.org.
 | Record the footage from the live site | `uv run --with playwright python scripts/record_footage.py` (Chrome; about 8 minutes; writes `public/clips/`) |
 | Preview | `npm run dev` |
 | Render (silent) | `npx remotion render AirlockDemo out/airlock-demo-silent.mp4 --codec=h264 --crf=18` |
-| Voice-over script | `python scripts/voiceover.py > ../docs/submission/voiceover-script.md` |
+| Voice-over script | `python scripts/voiceover.py > ../submissions/voiceover-script.md` |
 | Add the voice-over | Put the recording at `public/audio/voiceover.m4a` (path set in `src/timeline.json`), check sync with `python scripts/speech_segments.py <wav>`, then render: `npx remotion render AirlockDemo out/airlock-demo.mp4 --codec=h264 --crf=18 --audio-codec=aac --audio-bitrate=192k` |
 
 The edit lives in `src/timeline.json`: every scene, its source trims and speed changes, and the captions (which are also the

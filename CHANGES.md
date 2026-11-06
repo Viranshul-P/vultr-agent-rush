@@ -285,8 +285,7 @@ start, twice, with an unchanged workflow that had passed on the PR branch, so it
 
 ## 14. 2026-11-06: full review, QA PDF run, payment-safety fix (PRs #10, #11)
 
-A full UI and API review, followed by the team's 37-check Manual QA PDF (results with evidence:
-[docs/qa-results-2026-11-06.md](docs/qa-results-2026-11-06.md); test plan: [docs/05-manual-test-plan.md](docs/05-manual-test-plan.md)).
+A full UI and API review, followed by the team's 37-check manual QA run (36/37 passed; the open check was VM snapshots).
 
 - **Payment safety (FLOW-08):** processing an already-POSTED invoice again reset it to AWAIT_APPROVAL, so it could be
   approved and posted a second time. Processing now needs NEW or ERROR, and approval is refused if a posting exists.
