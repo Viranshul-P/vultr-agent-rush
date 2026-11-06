@@ -1,5 +1,5 @@
 import React from "react";
-import { Video } from "@remotion/media";
+import { Audio, Video } from "@remotion/media";
 import { TransitionSeries, linearTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 import { AbsoluteFill, Easing, Sequence, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
@@ -74,6 +74,7 @@ export const AirlockDemo: React.FC = () => {
   const tr = Math.round(timeline.transitionSec * fps);
   return (
     <AbsoluteFill style={{ background: C.ink }}>
+      {timeline.voiceover && <Audio name="Voice-over" src={staticFile(timeline.voiceover)} />}
       <TransitionSeries name="Airlock demo">
         {scenes.flatMap((scene, i) => {
           const seq = (

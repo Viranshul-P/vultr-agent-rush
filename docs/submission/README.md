@@ -9,7 +9,7 @@ Everything needed to submit on lablab.ai. Deadline: **Sun 8 Nov 2026, 21:00 IST*
 | Slides (10, PDF) | Draft ready: set the price on slide 9, then export as PDF | Deck artifact (owner's claude.ai account); export with Download, then PDF |
 | Cover image 16:9 | Ready | [`cover.png`](cover.png) (1920×1080) |
 | Screenshots | Ready | [`img/`](img/) |
-| Video (MP4, 4:19) | Rendered without sound; add the voice-over | `video/out/airlock-demo-silent.mp4` (built from [`video/`](../../video/README.md)); narration: [`voiceover-script.md`](voiceover-script.md) |
+| Video (MP4, 4:24, with voice-over) | Ready to upload | `video/out/airlock-demo.mp4` (built from [`video/`](../../video/README.md); not in git, 71 MB); narration: [`voiceover-script.md`](voiceover-script.md) |
 | lablab form text | Ready | below |
 | VM snapshots (OPS-02) | To do in the Vultr console | before recording |
 | Billing alert | To do in the Vultr console | |

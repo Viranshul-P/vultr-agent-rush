@@ -12,3 +12,6 @@ public/clips/
 .agents/
 .claude/
 skills-lock.json
+# Voice-over recording (personal audio, not committed)
+audio/
+public/audio/

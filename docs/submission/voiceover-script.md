@@ -75,7 +75,7 @@ _(no narration)_
 - **3:58.9 to 4:07.1**: Next: mailbox intake and ERP connectors, then the same airlock for any untrusted document.
 
 ## 4:06.9 · Close
-- **4:07.5 to 4:12.9**: Built on Vultr: Cloud Compute, Serverless Inference, VPC, Object Storage, Managed PostgreSQL.
-- **4:13.1 to 4:18.5**: We’re Team Beyonders, and this is Airlock.
+- **4:07.3 to 4:15.5**: Built on Vultr: Cloud Compute, Serverless Inference, VPC, Object Storage, Managed PostgreSQL.
+- **4:18.6 to 4:23.1**: We’re Team Beyonders, and this is Airlock.
 
-Total length: **4:18.9**.
+Total length: **4:23.9**.

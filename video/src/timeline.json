@@ -1,5 +1,6 @@
 {
   "fps": 30,
+  "voiceover": "audio/voiceover.m4a",
   "transitionSec": 0.5,
   "scenes": [
     { "id": "intro", "kind": "intro", "dur": 9, "captions": [] },
@@ -79,9 +80,9 @@
     { "id": "roadmap", "kind": "roadmap", "dur": 9, "captions": [
       { "from": 0.5, "to": 8.7, "text": "Next: mailbox intake and ERP connectors, then the same airlock for any untrusted document." }
     ] },
-    { "id": "outro", "kind": "outro", "dur": 12, "captions": [
-      { "from": 0.6, "to": 6.0, "text": "Built on Vultr: Cloud Compute, Serverless Inference, VPC, Object Storage, Managed PostgreSQL." },
-      { "from": 6.2, "to": 11.6, "text": "We’re Team Beyonders, and this is Airlock." }
+    { "id": "outro", "kind": "outro", "dur": 17, "captions": [
+      { "from": 0.4, "to": 8.6, "text": "Built on Vultr: Cloud Compute, Serverless Inference, VPC, Object Storage, Managed PostgreSQL." },
+      { "from": 11.7, "to": 16.2, "text": "We’re Team Beyonders, and this is Airlock." }
     ] }
   ]
 }
