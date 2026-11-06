@@ -1,8 +1,12 @@
-import { loadFont as loadGeist } from "@remotion/google-fonts/Geist";
-import { loadFont as loadGeistMono } from "@remotion/google-fonts/GeistMono";
+import { loadFont } from "@remotion/fonts";
+import { staticFile } from "remotion";
 
-export const sans = loadGeist("normal", { weights: ["400", "500", "600", "700"], subsets: ["latin"] }).fontFamily;
-export const mono = loadGeistMono("normal", { weights: ["400", "600"], subsets: ["latin"] }).fontFamily;
+// Geist ships as variable fonts (all weights in one file), bundled locally so renders never wait on the network.
+loadFont({ family: "Geist", url: staticFile("fonts/Geist.woff2"), weight: "100 900" });
+loadFont({ family: "Geist Mono", url: staticFile("fonts/GeistMono.woff2"), weight: "100 900" });
+
+export const sans = "Geist, Arial, sans-serif";
+export const mono = "'Geist Mono', 'Courier New', monospace";
 
 // Airlock's own tokens (web/src/styles.css)
 export const C = {
