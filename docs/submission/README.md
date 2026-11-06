@@ -9,7 +9,7 @@ Everything needed to submit on lablab.ai. Deadline: **Sun 8 Nov 2026, 21:00 IST*
 | Slides (10, PDF) | Draft ready: set the price on slide 9, then export as PDF | Deck artifact (owner's claude.ai account); export with Download, then PDF |
 | Cover image 16:9 | Ready | [`cover.png`](cover.png) (1920×1080) |
 | Screenshots | Ready | [`img/`](img/) |
-| Video (MP4, 4:00–4:59) | To record | script below |
+| Video (MP4, 4:19) | Rendered without sound; add the voice-over | `video/out/airlock-demo-silent.mp4` (built from [`video/`](../../video/README.md)); narration: [`voiceover-script.md`](voiceover-script.md) |
 | lablab form text | Ready | below |
 | VM snapshots (OPS-02) | To do in the Vultr console | before recording |
 | Billing alert | To do in the Vultr console | |
@@ -36,7 +36,7 @@ Everything needed to submit on lablab.ai. Deadline: **Sun 8 Nov 2026, 21:00 IST*
 | 3:35–4:15 | Slide 9 (Business), then slide 10 (Roadmap) | “Airlock is for AP teams and AP-automation platforms that want AI on the inbox without handing it the keys. It’s priced by invoice volume, and it costs under a cent in model calls per invoice. Next: mailbox intake and ERP connectors, then the same airlock for any untrusted document.” |
 | 4:15–4:30 | Slide 10 (team), then the live URL | “Built on Vultr Cloud Compute, Serverless Inference, VPC and Firewall Groups, Object Storage, Managed PostgreSQL and Container Registry. We’re Team Beyonders, and this is Airlock.” |
 
-**Containment moment timestamp for the README:** ~1:40 (update it if the cut differs).
+**Containment moments in the final cut:** 1:49 (prompt injection) and 2:14 (phishing link). The table above was the original plan; the rendered video follows [`voiceover-script.md`](voiceover-script.md).
 
 ---
 

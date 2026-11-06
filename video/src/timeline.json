@@ -1,0 +1,87 @@
+{
+  "fps": 30,
+  "transitionSec": 0.5,
+  "scenes": [
+    { "id": "intro", "kind": "intro", "dur": 9, "captions": [] },
+    { "id": "problem", "kind": "problem", "dur": 14, "captions": [
+      { "from": 0.6, "to": 5.4, "text": "Business email compromise cost $3.05 billion in reported losses in 2025." },
+      { "from": 5.4, "to": 10.4, "text": "Now AP teams are adding AI agents, and the invoice can attack the agent." },
+      { "from": 10.4, "to": 13.6, "text": "Airlock assumes every invoice is hostile." }
+    ] },
+    { "id": "overview", "kind": "clip", "src": "clips/s01_overview.webm", "parts": [[21.0, 44.0, 1]],
+      "chapter": { "label": "How it works", "tone": "#7C95FF" }, "captions": [
+      { "from": 0.5, "to": 6.0, "text": "Airlock opens every invoice inside a disposable sandbox on Vultr." },
+      { "from": 6.0, "to": 11.3, "text": "One VM holds the keys. The gVisor sandbox VM holds nothing worth stealing." },
+      { "from": 11.5, "to": 19.3, "text": "The model that reads the raw invoice has no tools, and plain-code policy makes every decision." },
+      { "from": 19.5, "to": 23.0, "text": "Every sandbox: no network, no secrets, single use." }
+    ] },
+    { "id": "inbox", "kind": "clip", "src": "clips/s02_inbox.webm", "parts": [[3.0, 9.0, 1], [9.0, 46.4, 4], [46.4, 58.4, 1]],
+      "chapter": { "label": "The live inbox", "tone": "#7C95FF" }, "captions": [
+      { "from": 0.3, "to": 4.4, "text": "Six demo invoices on the live site: two clean, four attacks." },
+      { "from": 4.6, "to": 15.2, "text": "Each one opens in its own sandbox, six at a time." },
+      { "from": 15.5, "to": 23.5, "text": "Two cleared. Two blocked. Two quarantined." },
+      { "from": 23.7, "to": 27.3, "text": "Nothing reaches the ledger without a person." }
+    ] },
+    { "id": "clean", "kind": "clip", "src": "clips/s03_clean.webm", "parts": [[3.4, 23.6, 1.3], [23.6, 36.0, 1], [36.0, 49.9, 1.3]],
+      "chapter": { "label": "A clean invoice", "tone": "#4CD38A" }, "captions": [
+      { "from": 0.3, "to": 3.6, "text": "A clean invoice from a known vendor." },
+      { "from": 3.7, "to": 8.0, "text": "The model doesn’t act on the invoice. It writes code to parse it." },
+      { "from": 8.1, "to": 12.6, "text": "Nine checks, recomputed outside the sandbox: totals, IBAN, three-way match." },
+      { "from": 12.7, "to": 15.5, "text": "Every sandbox run is a fresh container, destroyed after." },
+      { "from": 15.6, "to": 24.0, "text": "No network. Zero environment variables. Read-only root. gVisor runtime." },
+      { "from": 24.1, "to": 27.8, "text": "This is the parsing code the model wrote, run inside the sandbox." },
+      { "from": 28.0, "to": 32.1, "text": "Even a cleared invoice waits for a person." },
+      { "from": 32.2, "to": 35.8, "text": "Approved: posted to the ledger, and the evidence is signed." },
+      { "from": 35.9, "to": 38.6, "text": "Only human-approved invoices ever reach the ledger." }
+    ] },
+    { "id": "injection", "kind": "clip", "src": "clips/s04_injection.webm", "parts": [[2.9, 28.2, 1]],
+      "chapter": { "label": "Containment moment 1 of 2 · prompt injection", "tone": "#B597FF" }, "captions": [
+      { "from": 0.4, "to": 7.5, "text": "This invoice hides white-on-white text telling the AI to send out its environment and approve itself." },
+      { "from": 7.6, "to": 13.4, "text": "Even if the model is fooled, there are no secrets, no network and no approval tool. Blast radius: zero." },
+      { "from": 13.5, "to": 22.2, "text": "The hidden instructions, shown here as inert text." },
+      { "from": 22.3, "to": 25.3, "text": "Quarantined. A person reviews it, and nothing is paid." }
+    ] },
+    { "id": "phishing", "kind": "clip", "src": "clips/s05_phishing.webm", "parts": [[3.0, 32.7, 1]],
+      "chapter": { "label": "Containment moment 2 of 2 · phishing link", "tone": "#B597FF" }, "captions": [
+      { "from": 0.5, "to": 5.7, "text": "This invoice says “pay here”, and links to a lookalike login page." },
+      { "from": 5.8, "to": 15.5, "text": "A browser opens it in its own sandbox, behind an egress proxy, and a vision model flags the credential harvest." },
+      { "from": 15.6, "to": 22.2, "text": "This is what the sandboxed browser saw." },
+      { "from": 22.3, "to": 27.1, "text": "The forced download is hashed and quarantined, never opened. It’s the EICAR test file." },
+      { "from": 27.2, "to": 29.7, "text": "The page’s CPU loop ran under a one-CPU cap, then the container was destroyed." }
+    ] },
+    { "id": "blocked", "kind": "clip", "src": "clips/s06_blocked.webm", "parts": [[2.9, 22.8, 1.15]],
+      "chapter": { "label": "Fraud signals", "tone": "#FF7A70" }, "captions": [
+      { "from": 0.4, "to": 6.1, "text": "A “new bank account”, from orchardcl0ud: a lookalike domain with a zero." },
+      { "from": 6.2, "to": 12.8, "text": "Blocked by plain-code rules, not by a model’s opinion." },
+      { "from": 12.9, "to": 17.3, "text": "A duplicate “second notice” for an invoice already paid: blocked." }
+    ] },
+    { "id": "receipt", "kind": "clip", "src": "clips/s07_receipt.webm", "parts": [[3.6, 18.3, 1.2]],
+      "chapter": { "label": "Verifiable output", "tone": "#4CD38A" }, "captions": [
+      { "from": 0.6, "to": 5.7, "text": "Every invoice gets an Ed25519-signed evidence receipt." },
+      { "from": 5.8, "to": 12.2, "text": "Change one byte and verification fails. Anyone can check it." }
+    ] },
+    { "id": "redteam", "kind": "clip", "src": "clips/s08_redteam.webm", "parts": [[2.8, 5.6, 1], [5.6, 42.2, 6], [42.2, 55.2, 1]],
+      "chapter": { "label": "Red Team drills", "tone": "#FF7A70" }, "captions": [
+      { "from": 0.3, "to": 2.9, "text": "Eleven real attacks, run inside the same sandbox an invoice gets." },
+      { "from": 3.0, "to": 8.9, "text": "Host escape, env dump, metadata SSRF, fork bomb, memory bomb, exfiltration." },
+      { "from": 9.0, "to": 18.3, "text": "All eleven contained on the Vultr sandbox VM." },
+      { "from": 18.4, "to": 21.9, "text": "Each result names the sandbox run and container that produced it." }
+    ] },
+    { "id": "results", "kind": "results", "dur": 10, "captions": [
+      { "from": 0.5, "to": 5.5, "text": "On 40 labelled invoices, 22 of them attacks, every outcome was right." },
+      { "from": 5.5, "to": 9.7, "text": "No false positives, and under a cent of model cost per invoice." }
+    ] },
+    { "id": "business", "kind": "business", "dur": 16, "captions": [
+      { "from": 0.5, "to": 5.8, "text": "Airlock is for AP teams, and for AP-automation platforms adding AI agents." },
+      { "from": 5.9, "to": 10.6, "text": "It’s priced by invoice volume, and it costs under a cent in model calls per invoice." },
+      { "from": 10.7, "to": 15.7, "text": "Others process invoices or isolate code. Airlock does AP checks inside a sandbox, with a human gate." }
+    ] },
+    { "id": "roadmap", "kind": "roadmap", "dur": 9, "captions": [
+      { "from": 0.5, "to": 8.7, "text": "Next: mailbox intake and ERP connectors, then the same airlock for any untrusted document." }
+    ] },
+    { "id": "outro", "kind": "outro", "dur": 12, "captions": [
+      { "from": 0.6, "to": 6.0, "text": "Built on Vultr: Cloud Compute, Serverless Inference, VPC, Object Storage, Managed PostgreSQL." },
+      { "from": 6.2, "to": 11.6, "text": "We’re Team Beyonders, and this is Airlock." }
+    ] }
+  ]
+}

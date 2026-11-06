@@ -1,0 +1,14 @@
+node_modules
+dist
+.DS_Store
+.env
+
+# Ignore the output video from Git but not videos you import into src/.
+out
+
+# Recorded footage (about 70 MB); regenerate with: uv run --with playwright python scripts/record_footage.py
+public/clips/
+# Installed agent skills (third-party, reinstall with: npx skills add remotion-dev/skills)
+.agents/
+.claude/
+skills-lock.json
