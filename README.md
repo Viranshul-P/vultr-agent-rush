@@ -8,7 +8,7 @@ Accounts-payable teams open hundreds of untrusted invoices from strangers every 
 
 - **Live demo:** https://app.beyonders.duckdns.org. Open it and click **Process inbox** (no sign-up; every visitor gets their own workspace).
 - **Demo video:** _link_ · **Slides:** _link_ · **Submission kit:** [docs/submission](docs/submission/README.md)
-- **Containment moment in the video:** ~1:40
+- **Containment moments in the video:** 1:49 (prompt injection) and 2:14 (phishing link)
 
 ---
 
