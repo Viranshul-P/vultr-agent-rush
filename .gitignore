@@ -36,3 +36,6 @@ Thumbs.db
 
 # Claude Code personal settings
 .claude/settings.local.json
+
+# Demo video (71 MB) is uploaded separately and kept out of git
+submissions/*.mp4
