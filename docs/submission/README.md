@@ -5,15 +5,15 @@ Everything needed to submit on lablab.ai. Deadline: **Sun 8 Nov 2026, 21:00 IST*
 | Item | Status | Where |
 |---|---|---|
 | Live demo | Ready | https://app.beyonders.duckdns.org |
-| Repo | Ready (private until submission) | https://github.com/Viranshul-P/vultr-agent-rush |
-| Slides (10, PDF) | Draft ready: set the price on slide 9, then export as PDF | Deck artifact (owner's claude.ai account); export with Download, then PDF |
+| Repo | Public | https://github.com/Viranshul-P/vultr-agent-rush |
+| Slides (10, PDF) | Ready (slide 9 price: $299/month for 1,000 invoices, then $0.25 each); export as PDF | Deck artifact https://claude.ai/artifact/XdKFEb8LgMXrLzRCf6vw5V (private, owner's claude.ai account); Download, then PDF |
 | Cover image 16:9 | Ready | [`cover.png`](cover.png) (1920×1080) |
 | Screenshots | Ready | [`img/`](img/) |
 | Video (MP4, 4:24, with voice-over) | Ready to upload | `video/out/airlock-demo.mp4` (built from [`video/`](../../video/README.md); not in git, 71 MB); narration: [`voiceover-script.md`](voiceover-script.md) |
 | lablab form text | Ready | below |
-| VM snapshots (OPS-02) | To do in the Vultr console | before recording |
+| VM snapshots (OPS-02) | To do in the Vultr console (API key is IP-restricted) | rollback point for judging |
 | Billing alert | To do in the Vultr console | |
-| Repo public + tag `v1.0-submission` | At submission time | |
+| Repo public + tag `v1.0-submission` | Done (tag on the final commit) | |
 
 ---
 
