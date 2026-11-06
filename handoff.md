@@ -41,6 +41,7 @@ The full local stack command is in the README ("Run it locally").
 1c. ✅ Live click-through fixes (CHANGES.md §11, PR #4) and parallel "Process inbox" (§12, PR #5): one visitor's inbox ~1 min, 5 visitors at once 30/30 correct. README has models, limitations and team sections.
    **Deploying:** auto mode blocks Claude from running deploys on the VMs; it uploads the package to `~/stage/` and a teammate runs `ssh ... 'bash ~/stage/airlock-remote.sh'`. Web builds must replace the *contents* of `web/dist` (Caddy bind-mounts the directory; renaming it needs a Caddy restart).
 1d. ✅ Frontend redesign (PR #8) deployed to VM-1 on 5 Nov and verified live on 6 Nov (CHANGES.md §13): golden inbox 6/6 in 48 s, phishing screenshots served, approve → ERP → signed receipt verifies, double approve 409, all pages 200.
+1e. ✅ 6 Nov: full review + the team's 37-check QA PDF run (CHANGES.md §14). Fixed a double-payment bug (reprocessing a POSTED invoice), workspace scoping of runs, and UI issues; deployed and re-tested live: 36/37 pass, OPS-02 (snapshots) open.
    **Development is done.** Everything below is submission or ops work.
 2. **Snapshot both VMs** before recording the video, and write down how to roll back.
 3. **Submission assets:** video (4:30 with the containment moments; plan in docs/03 §11.1 and the checklist in docs/04 Part 16), 10-slide PDF, 16:9 cover image, lablab form (drafts in docs/03 §11.4). Fill in the video/slides links and the containment timestamp at the top of README.md.

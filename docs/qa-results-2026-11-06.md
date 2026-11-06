@@ -73,6 +73,21 @@ Each drill's run id and container id are in the API response. One example: D1, r
 | OPS-01 | P0 | Pass | 2026-11-06 15:57 IST: `/api/health` gives 200, mode vultr, tier T1-gvisor, runtime runsc, Object Storage; the public Inbox loads in a fresh session |
 | OPS-02 | P0 | **Blocked** | Needs the Vultr console to take or confirm snapshots of `airlock-control` and `airlock-sandbox`. The existing VM-1 rollback point is `~/airlock-backup-20261105-pre-redesign.tgz` with image `deploy-api:20261105-pre-redesign` (CHANGES.md §13) |
 
-## To close out
-1. **Deploy** PR #10 and this branch (web build plus `api/airlock_api/main.py`), then re-run FLOW-08, UI-03, UI-04 and SEC-04 (run detail) on the live site.
-2. **OPS-02:** snapshot both VMs in the Vultr console and record the snapshot ids here.
+## Re-test after the deploy (6 Nov, about 16:30 IST, build `index-CjLcpnNm.js`)
+PRs #10 and #11 were deployed to VM-1 (rollback point: `~/airlock-backup-20261106-pre-qa-fixes.tgz` and image `deploy-api:20261106-pre-qa-fixes`).
+
+| ID | Result now | Evidence |
+|---|---|---|
+| FLOW-08 | **Pass** | Processing a POSTED invoice gives `409` "invoice is already POSTED; only new invoices can be processed", and a BLOCKED one gives `409` likewise; the status stays POSTED and the ERP still has 1 posting |
+| ENV-02 | **Pass** | favicon is served; 0 console errors across all pages on live |
+| UI-03 | **Pass** | the D1 row shows `Run drill-d1-395191a1fd · container 96f90fb2f7a1 · T1-gvisor` |
+| UI-04 | **Pass** | the Ledger row reads `Brightline Office Supply · INV-2026-0412 · USD 4,643.93 · Receipt` |
+| SEC-04 (extra) | **Pass** | another workspace gets `404` for the run, its screenshot, receipt verify and the invoice; the owner gets `200` |
+| Smoke | Pass | health 200 (vultr, T1-gvisor); `/api/receipts/pubkey` 200; golden inbox 2/2/2 in 43 s; receipt verifies; phishing screenshots load (1280×800) and the viewer closes with Esc |
+
+**Final tally: 36 pass, 0 fail, 1 blocked (OPS-02).**
+
+Found during the re-test: the new run timeline labelled the browser run "browse" (its real kind) and skipped its color. Fixed in `web/src/viz.tsx` (web-only deploy).
+
+## Still open
+- **OPS-02:** snapshot both VMs in the Vultr console and record the snapshot ids here.

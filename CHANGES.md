@@ -282,3 +282,18 @@ Verified on 6 Nov against https://app.beyonders.duckdns.org as a fresh visitor (
 
 Tests on `main`: API 75, runner 11, web build clean (run locally; GitHub Actions on the merge commit failed to
 start, twice, with an unchanged workflow that had passed on the PR branch, so it's a GitHub-side issue).
+
+## 14. 2026-11-06: full review, QA PDF run, payment-safety fix (PRs #10, #11)
+
+A full UI and API review, followed by the team's 37-check Manual QA PDF (results with evidence:
+[docs/qa-results-2026-11-06.md](docs/qa-results-2026-11-06.md); test plan: [docs/05-manual-test-plan.md](docs/05-manual-test-plan.md)).
+
+- **Payment safety (FLOW-08):** processing an already-POSTED invoice again reset it to AWAIT_APPROVAL, so it could be
+  approved and posted a second time. Processing now needs NEW or ERROR, and approval is refused if a posting exists.
+- **Privacy:** sandbox runs, screenshots and receipt verification are limited to the visitor's own workspace.
+- `/api/receipts/pubkey` was shadowed by `/api/receipts/{inv_id}` (404); route order fixed.
+- UI: error state, readable errors, Ledger vendor/receipt links, favicon, drill run ids, and new visuals.
+
+Deployed to VM-1 on 6 Nov (build `index-CjLcpnNm.js`). Rollback point: `~/airlock-backup-20261106-pre-qa-fixes.tgz`,
+image `deploy-api:20261106-pre-qa-fixes`. Re-test on live: 36/37 pass, OPS-02 (VM snapshots) still open. Tests: API 78, runner 11.
+
