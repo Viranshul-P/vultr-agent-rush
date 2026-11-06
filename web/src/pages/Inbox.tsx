@@ -2,9 +2,10 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronRight, FileUp, Loader2, Play, RotateCcw, Sparkles, UploadCloud } from "lucide-react";
-import { api, Invoice } from "../api";
+import { api, errMsg, Invoice } from "../api";
 import { isProcessing, toneOf } from "../pipeline";
 import { Empty, MiniPipe, PageHeader, Seg, Sk, StatusBadge, ease, money, useToast } from "../ui";
+import { OutcomeStrip } from "../viz";
 
 type Filter = "all" | "approval" | "contained" | "active" | "posted";
 
@@ -32,20 +33,20 @@ export function Inbox() {
       const n = r?.started?.length ?? 0;
       toast(n ? { kind: "info", title: `Processing ${n} invoice${n === 1 ? "" : "s"}`, detail: "Each one opens in its own disposable sandbox. Results arrive in about 20–40 s." }
         : { kind: "info", title: "Nothing new to process", detail: "Reset the demo to start over, or upload a PDF." });
-    } catch (e) { toast({ kind: "err", title: "Couldn't start processing", detail: String(e) }); }
+    } catch (e) { toast({ kind: "err", title: "Couldn't start processing", detail: errMsg(e) }); }
     setTimeout(() => setBusy(""), 800);
   };
   const reset = async () => {
     setBusy("reset");
     try { await api.reset(); await load(); toast({ kind: "ok", title: "Demo reset", detail: "Six fresh demo invoices are back in the inbox." }); }
-    catch (e) { toast({ kind: "err", title: "Reset failed", detail: String(e) }); }
+    catch (e) { toast({ kind: "err", title: "Reset failed", detail: errMsg(e) }); }
     setBusy("");
   };
   const upload = async (f: File) => {
     if (!/\.pdf$/i.test(f.name) && f.type !== "application/pdf") { toast({ kind: "err", title: "Only PDF invoices are accepted", detail: `${f.name} isn't a PDF.` }); return; }
     setBusy("upload");
     try { await api.upload(f); toast({ kind: "ok", title: "Invoice uploaded", detail: `${f.name} is in the inbox. Process it to send it through the sandbox.` }); load(); }
-    catch (e) { toast({ kind: "err", title: "Upload failed", detail: String(e).slice(0, 200) }); }
+    catch (e) { toast({ kind: "err", title: "Upload failed", detail: errMsg(e) }); }
     setBusy("");
   };
 
@@ -82,6 +83,8 @@ export function Inbox() {
   });
   const allNew = loaded && invoices.length > 0 && invoices.every((i) => i.status === "NEW" && !i.queued);
   const anyNew = invoices.some((i) => i.status === "NEW" && !i.queued);
+  const seeded = invoices.filter((i) => i.source !== "upload").length;
+  const uploaded = invoices.length - seeded;
 
   return (
     <div>
@@ -101,12 +104,16 @@ export function Inbox() {
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease }} style={{ overflow: "hidden" }}>
             <div className="callout info" style={{ marginBottom: 16, alignItems: "center" }}>
               <Sparkles />
-              <div className="grow"><b style={{ color: "var(--text)" }}>{invoices.length} demo invoices are waiting.</b> Two are clean, and four are attacks: a duplicate, a bank-detail swap, a hidden prompt injection and a phishing link. Process them and see which ones get through.</div>
+              <div className="grow">{seeded === 6
+                ? <><b style={{ color: "var(--text)" }}>6 demo invoices are waiting{uploaded ? `, plus ${uploaded} you uploaded` : ""}.</b> Two are clean, and four are attacks: a duplicate, a bank-detail swap, a hidden prompt injection and a phishing link. Process them and see which ones get through.</>
+                : <><b style={{ color: "var(--text)" }}>{invoices.length} invoice{invoices.length === 1 ? " is" : "s are"} waiting.</b> Process them to send each one through its own sandbox.</>}</div>
               <button className="btn sm" onClick={processAll} disabled={!!busy}><Play />Process all</button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {loaded && !allNew && <OutcomeStrip invoices={invoices} />}
 
       <div className="row" style={{ marginBottom: 12 }}>
         <Seg id="inbox" value={filter} onChange={setFilter} items={[

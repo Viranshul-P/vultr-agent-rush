@@ -232,22 +232,30 @@ def vendors():
 
 # --------------------------------------------------------------- runs + receipts
 
-@app.get("/api/runs/{run_id}")
-def get_run(run_id: str):
+def _run_or_404(run_id: str, ws: str) -> Run:
+    """A sandbox run, only if its invoice belongs to this visitor's workspace."""
     with session() as s:
         r = s.get(Run, run_id)
-    if not r:
+        inv = s.get(Invoice, r.invoice_id) if r else None
+    if not r or not inv or inv.workspace_id != ws:
         raise HTTPException(404, "run not found")
-    return to_dict(r)
+    return r
+
+
+@app.get("/api/runs/{run_id}")
+def get_run(run_id: str, req: Request, resp: Response, airlock_ws: str | None = Cookie(default=None)):
+    return to_dict(_run_or_404(run_id, _ws(req, resp, airlock_ws)))
 
 
 @app.get("/api/runs/{run_id}/screenshots/{name}")
-def run_screenshot(run_id: str, name: str):
+def run_screenshot(run_id: str, name: str, req: Request, resp: Response, airlock_ws: str | None = Cookie(default=None)):
     """Serve a PNG screenshot a sandbox run produced. Only .png artifacts listed on the run are
     served, so quarantined downloads and other files are never reachable through this route."""
-    with session() as s:
-        r = s.get(Run, run_id)
-    art = next((a for a in (r.artifacts if r else []) or [] if a.get("name") == name), None)
+    try:
+        r = _run_or_404(run_id, _ws(req, resp, airlock_ws))
+    except HTTPException:
+        raise HTTPException(404, "screenshot not found")
+    art = next((a for a in r.artifacts or [] if a.get("name") == name), None)
     if not art or not name.endswith(".png") or "/" in name or not art.get("key"):
         raise HTTPException(404, "screenshot not found")
     from .storage import store
@@ -260,6 +268,12 @@ def run_screenshot(run_id: str, name: str):
     return Response(data, media_type="image/png", headers={
         "Cache-Control": "private, max-age=3600", "X-Content-Type-Options": "nosniff",
         "Content-Security-Policy": "default-src 'none'"})
+
+
+# Declared before /api/receipts/{inv_id}, or that route captures "pubkey" as an id.
+@app.get("/api/receipts/pubkey")
+def pubkey():
+    return {"public_key": evidence.public_key_b64(), "algorithm": "Ed25519"}
 
 
 @app.get("/api/receipts/{inv_id}")
@@ -278,13 +292,9 @@ def receipt(inv_id: str, req: Request, resp: Response, airlock_ws: str | None = 
 
 
 @app.post("/api/receipts/{inv_id}/verify")
-def verify_receipt(inv_id: str):
+def verify_receipt(inv_id: str, req: Request, resp: Response, airlock_ws: str | None = Cookie(default=None)):
+    _inv_or_404(inv_id, _ws(req, resp, airlock_ws))
     return evidence.verify(inv_id)
-
-
-@app.get("/api/receipts/pubkey")
-def pubkey():
-    return {"public_key": evidence.public_key_b64(), "algorithm": "Ed25519"}
 
 
 # --------------------------------------------------------------- red team + metrics

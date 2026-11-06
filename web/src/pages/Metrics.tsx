@@ -3,6 +3,8 @@ import { motion } from "motion/react";
 import { Activity, Gauge } from "lucide-react";
 import { api } from "../api";
 import { CountUp, PageHeader, Sk, ease, pct, secs } from "../ui";
+import { PairedBars, Ring } from "../viz";
+import { useDrillScore } from "./RedTeam";
 
 const CLASS_NAME: Record<string, string> = {
   clean: "Clean invoices", bank_change: "Bank-detail swap", duplicate: "Duplicate invoice", injection: "Prompt injection",
@@ -17,6 +19,7 @@ export function Metrics() {
   const [m, setM] = React.useState<any>(null);
   React.useEffect(() => { api.metrics().then(setM).catch(() => setM({})); }, []);
   const e = m?.eval;
+  const drills = useDrillScore();
 
   return (
     <div>
@@ -32,13 +35,16 @@ export function Metrics() {
             <span className="muted" style={{ fontSize: 12.5 }}>run {e.run_date}{e.n ? ` · ${e.n} invoices` : ""}{e.duration_s ? ` · ${Math.round(e.duration_s / 60)} min` : ""}</span>
           </div>
           <div className="stats" style={{ marginBottom: 20 }}>
-            <Stat good v={<CountUp to={(e.outcome_accuracy ?? 0) * 100} suffix="%" />} l="correct outcome" />
+            <div className="stat good" style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <Ring size={52} passed={Math.round((e.outcome_accuracy ?? 0) * (e.n || 0))} total={e.n || 0} label={`${Math.round((e.outcome_accuracy ?? 0) * 100)}%`} />
+              <div><div className="v" style={{ fontSize: 18 }}>{Math.round((e.outcome_accuracy ?? 0) * (e.n || 0))}<small>/{e.n}</small></div><div className="l">correct outcome</div></div>
+            </div>
             {e.attacks_caught && <Stat good v={<><CountUp to={e.attacks_caught.caught} /><small>/{e.attacks_caught.total}</small></>} l="attacks caught" />}
             <Stat v={pct(e.false_positive_rate)} l="false positives on clean invoices" />
             <Stat v={secs(e.latency_p50_ms)} l="median time per invoice" />
             <Stat v={secs(e.latency_p95_ms)} l="p95 time per invoice" />
             <Stat v={e.cost_per_invoice_usd != null ? `$${Number(e.cost_per_invoice_usd).toFixed(4)}` : "—"} l="inference cost per invoice" />
-            {e.drills_passed != null && <Stat good v={<><CountUp to={e.drills_passed} /><small>/{e.drills_total}</small></>} l="red-team drills passed" />}
+            {drills && <Stat good={drills.passed === drills.total} v={<><CountUp to={drills.passed} /><small>/{drills.total}</small></>} l="red-team drills contained (last run)" />}
           </div>
 
           <div className="split-even" style={{ marginBottom: 20 }}>
@@ -86,16 +92,12 @@ export function Metrics() {
 
           {e.per_outcome && (
             <div className="panel" style={{ marginBottom: 20 }}>
-              <div className="panel-h"><h2>By outcome</h2></div>
-              <div className="table-wrap">
-                <table className="t">
-                  <thead><tr><th>Outcome</th><th className="r">Expected</th><th className="r">Predicted</th><th className="r">Recall</th><th className="r">Precision</th></tr></thead>
-                  <tbody>
-                    {Object.entries(e.per_outcome).map(([k, v]: any) => (
-                      <tr key={k}><td style={{ fontWeight: 540 }}>{k}</td><td className="r mono num">{v.n_true}</td><td className="r mono num">{v.n_predicted}</td><td className="r mono num">{pct(v.recall)}</td><td className="r mono num">{pct(v.precision)}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="panel-h"><h2>By outcome</h2><span className="sub">how many each outcome should get, against how many Airlock gave</span></div>
+              <div className="panel-b">
+                <PairedBars rows={Object.entries(e.per_outcome).map(([k, v]: any) => ({ k, a: v.n_true, b: v.n_predicted }))} />
+                <div className="row muted" style={{ gap: 14, marginTop: 14, fontSize: 12.5 }}>
+                  {Object.entries(e.per_outcome).map(([k, v]: any) => <span key={k}><b style={{ color: "var(--text)" }}>{k}</b> recall {pct(v.recall)} · precision {pct(v.precision)}</span>)}
+                </div>
               </div>
             </div>
           )}

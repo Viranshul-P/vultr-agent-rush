@@ -43,7 +43,7 @@ export const STATUS_LABEL: Record<Status, string> = {
 };
 
 /** Per-stage state for an invoice. `hasLinks` marks whether the link stage really ran. */
-export function stageStates(inv: Pick<Invoice, "status" | "queued" | "browser" | "fields">): StageState[] {
+export function stageStates(inv: Pick<Invoice, "status" | "queued" | "browser" | "fields" | "policy">): StageState[] {
   const s = inv.status;
   const ranLinks = (inv.browser?.length || 0) > 0 || s === "INSPECTING_LINKS";
   const out: StageState[] = STAGES.map(() => "wait");
@@ -52,6 +52,13 @@ export function stageStates(inv: Pick<Invoice, "status" | "queued" | "browser" |
   if (pos !== undefined) {
     for (let i = 0; i < STAGES.length; i++) out[i] = i < pos ? "done" : i === pos ? "active" : "wait";
     if (pos > 3 && !ranLinks) out[3] = "skip";
+    return out;
+  }
+  // ERROR: show where it actually stopped, instead of marking every sandbox stage as passed.
+  if (s === "ERROR") {
+    const at = !inv.fields ? 1 : !inv.policy?.checks?.length ? 2 : 4;
+    for (let i = 0; i < STAGES.length; i++) out[i] = i < at ? "done" : i === at ? "stop" : "skip";
+    if (at > 3 && !ranLinks) out[3] = "skip";
     return out;
   }
   // terminal states
@@ -67,6 +74,7 @@ export function stageSub(key: StageKey, st: StageState, inv: Invoice): string {
   if (st === "skip") return key === "links" ? "no links" : "not needed";
   if (st === "active") return key === "approve" ? "waiting for you" : "running…";
   if (st === "wait") return "";
+  if (st === "stop" && inv.status === "ERROR") return key === "decide" ? "error · held" : "failed";
   switch (key) {
     case "scan": return inv.detectors?.injection_suspected ? "hidden text found" : "fixed program";
     case "extract": return "model-written code";

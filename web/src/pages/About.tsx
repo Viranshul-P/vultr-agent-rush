@@ -1,8 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
-import { ArrowRight, Check, EyeOff, Gavel, Lock, Play } from "lucide-react";
+import { ArrowRight, Cpu, EyeOff, FileLock2, Gavel, KeyRound, Lock, Play, ServerOff, Trash2, UserX } from "lucide-react";
 import { PageHeader, ease } from "../ui";
+import { DualLlmDiagram, PrecedenceLadder } from "../viz";
 
 const RULES: [string, "QUARANTINE" | "BLOCK" | "HOLD", string][] = [
   ["R1", "QUARANTINE", "Invoice contains instructions aimed at AI systems"],
@@ -19,6 +20,16 @@ const RULES: [string, "QUARANTINE" | "BLOCK" | "HOLD", string][] = [
   ["R12", "HOLD", "A payment link could not be safely inspected"],
 ];
 const TONE = { QUARANTINE: "quar", BLOCK: "block", HOLD: "hold" } as const;
+
+const CONTAIN: [React.ReactNode, string, string][] = [
+  [<Cpu key="i" />, "gVisor, separate VM", "User-space kernel (runsc) on a VM that holds no keys"],
+  [<ServerOff key="i" />, "No network", "Code sandboxes have none; the browser only reaches a logging egress proxy"],
+  [<KeyRound key="i" />, "No secrets", "Zero env vars passed; the sandbox VM has no API keys"],
+  [<UserX key="i" />, "No privileges", "Non-root, read-only root, every capability dropped"],
+  [<Gavel key="i" />, "Hard caps", "CPU, memory, process count and wall-clock limits"],
+  [<Trash2 key="i" />, "Single use", "One container per task, destroyed after; orphans swept"],
+  [<FileLock2 key="i" />, "Signed evidence", "Every run sealed into an Ed25519 receipt"],
+];
 
 function ArchDiagram() {
   return (
@@ -108,31 +119,23 @@ export function About() {
         </div>
       </div>
 
-      <div className="split-even" style={{ marginBottom: 20 }}>
-        <motion.div className="panel" initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, ease }}>
-          <div className="panel-h"><EyeOff size={16} /><h2>Dual-LLM safety</h2></div>
-          <div className="panel-b prose">
-            <p>The model that reads raw invoice text has <b>no tools</b>, so a successful injection has nothing to call. It writes parsing code, and that code runs in a sandbox.</p>
-            <p>The model that writes the human-readable summary <b>never sees the raw document</b>, only structured results.</p>
-            <p>The <b>policy engine is plain code</b>. It makes every decision, and no model can trigger a payment.</p>
+      <motion.div className="panel" style={{ marginBottom: 20 }} initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, ease }}>
+        <div className="panel-h"><EyeOff size={16} /><h2>Dual-LLM safety</h2><span className="sub">the model that can be fooled has nothing to call</span></div>
+        <div className="panel-b" style={{ overflowX: "auto" }}><div style={{ minWidth: 520 }}><DualLlmDiagram /></div></div>
+      </motion.div>
+
+      <motion.div className="panel" style={{ marginBottom: 20 }} initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, ease, delay: 0.06 }}>
+        <div className="panel-h"><Lock size={16} /><h2>Containment</h2><span className="sub">every sandbox run, every time</span></div>
+        <div className="panel-b">
+          <div className="tiles">
+            {CONTAIN.map(([icon, t, d]) => <div key={t} className="tile">{icon}<b>{t}</b><span>{d}</span></div>)}
           </div>
-        </motion.div>
-        <motion.div className="panel" initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, ease, delay: 0.06 }}>
-          <div className="panel-h"><Lock size={16} /><h2>Containment</h2></div>
-          <div className="panel-b">
-            <ul className="list-check">
-              <li><Check /><span>gVisor (runsc) user-space kernel on a <b>separate VM</b></span></li>
-              <li><Check /><span><b>No network</b> for code. The browser gets out only through a logging egress proxy that blocks private and cloud-metadata addresses</span></li>
-              <li><Check /><span><b>No secrets</b>: zero env vars passed, and the sandbox VM holds no API keys</span></li>
-              <li><Check /><span>Non-root user, read-only root, no capabilities, CPU / memory / pid / time caps</span></li>
-              <li><Check /><span>Destroyed after each task; every run is signed into a tamper-evident receipt</span></li>
-            </ul>
-          </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
 
       <div className="panel" style={{ marginBottom: 20 }}>
-        <div className="panel-h"><Gavel size={16} /><h2>Policy rules</h2><span className="sub">the highest-ranked rule that fires sets the outcome: quarantine › block › hold › clear</span></div>
+        <div className="panel-h"><Gavel size={16} /><h2>Policy rules</h2><span className="sub">the highest-ranked rule that fires sets the outcome</span></div>
+        <PrecedenceLadder counts={{ QUARANTINE: RULES.filter((r) => r[1] === "QUARANTINE").length, BLOCK: RULES.filter((r) => r[1] === "BLOCK").length, HOLD: RULES.filter((r) => r[1] === "HOLD").length }} />
         <div className="table-wrap">
           <table className="t">
             <thead><tr><th style={{ width: 70 }}>Rule</th><th style={{ width: 150 }}>Outcome</th><th>When</th></tr></thead>

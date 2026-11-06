@@ -6,9 +6,10 @@ import {
   KeyRound, Loader2, MessageSquare, PauseCircle, Play, RefreshCw, ScanLine, ServerOff, ShieldAlert, ShieldCheck,
   Sparkles, Trash2, UserCheck, X, XCircle,
 } from "lucide-react";
-import { api, Invoice, Run } from "../api";
+import { api, errMsg, Invoice, Run } from "../api";
 import { isProcessing, toneOf } from "../pipeline";
 import { Callout, CopyButton, Drawer, Pipeline, Seg, Sk, StatusBadge, TONE_TITLE, ease, money, useToast } from "../ui";
+import { Ring, RunTimeline } from "../viz";
 
 type Ev = { id: number; type: string; ts: string; payload: any };
 
@@ -21,7 +22,7 @@ function evView(e: Ev): { t: string; d?: string; icon: React.ReactNode; tone?: s
     case "sandbox.created": return { t: "Sandbox started", d: `${p.container_id} · ${p.tier} · network ${p.isolation?.network ?? "none"}`, icon: <Box />, tone: "proc" };
     case "sandbox.finished": return { t: "Sandbox finished", d: `exit ${p.exit_code}${p.killed_reason ? ` · killed: ${p.killed_reason}` : ""} · ${p.duration_ms} ms`, icon: <Check /> };
     case "sandbox.destroyed": return { t: "Sandbox destroyed", d: "Container and its files deleted", icon: <Trash2 />, tone: "ok" };
-    case "sandbox.retry": return { t: "Retrying after an error", d: (p.stderr_tail || "").slice(-140), icon: <RefreshCw />, tone: "warn" };
+    case "sandbox.retry": return { t: "Retrying after an error", d: String(p.stderr_tail || "").trim().split("\n").filter(Boolean).pop()?.slice(-160), icon: <RefreshCw />, tone: "warn" };
     case "egress.attempt": return { t: "Outbound connection blocked", d: p.detail, icon: <ServerOff />, tone: "bad" };
     case "detector.hit": return { t: p.injection_suspected ? "Hidden instructions detected" : "Injection detectors ran", d: `${(p.hidden_text || []).length} hidden text run(s)${p.classifier_score != null ? ` · classifier ${Number(p.classifier_score).toFixed(2)}` : ""}`, icon: <EyeOff />, tone: p.injection_suspected ? "quar" : undefined };
     case "check.result": return { t: `${CHECK_NAME[p.check_id] || p.check_id}`, d: p.detail, icon: p.passed ? <Check /> : <X />, tone: p.passed ? "ok" : "bad" };
@@ -63,7 +64,7 @@ export function InvoiceDetail() {
 
   const refresh = React.useCallback(() => {
     if (!id) return;
-    api.invoice(id).then((d) => { setInv(d.invoice); setRuns(d.runs); setEvents(d.events); setErr(null); }).catch((e) => setErr(String(e)));
+    api.invoice(id).then((d) => { setInv(d.invoice); setRuns(d.runs); setEvents(d.events); setErr(null); }).catch((e) => setErr(errMsg(e)));
   }, [id]);
 
   React.useEffect(() => {
@@ -82,7 +83,7 @@ export function InvoiceDetail() {
     return () => clearInterval(t);
   }, [inv?.status, inv?.queued, refresh]);
 
-  const openRunById = (rid: string) => api.run(rid).then(setOpenRun).catch((e) => toast({ kind: "err", title: "Couldn't load the run", detail: String(e) }));
+  const openRunById = (rid: string) => api.run(rid).then(setOpenRun).catch((e) => toast({ kind: "err", title: "Couldn't load the run", detail: errMsg(e) }));
 
   if (err && !inv) return <div><BackLink /><Callout kind="bad">Couldn't load this invoice. It may belong to another demo workspace, or the demo was reset.</Callout></div>;
   if (!inv) return <DetailSkeleton />;
@@ -92,7 +93,7 @@ export function InvoiceDetail() {
   const process = async () => {
     setBusy("process");
     try { await api.process(inv.id); toast({ kind: "info", title: "Processing started", detail: "Watch each stage light up below." }); refresh(); }
-    catch (e) { toast({ kind: "err", title: "Couldn't start processing", detail: String(e) }); }
+    catch (e) { toast({ kind: "err", title: "Couldn't start processing", detail: errMsg(e) }); }
     setTimeout(() => setBusy(""), 600);
   };
   const decide = async (d: "approve" | "reject") => {
@@ -101,7 +102,7 @@ export function InvoiceDetail() {
       await api.decide(inv.id, d);
       toast(d === "approve" ? { kind: "ok", title: `Approved: ${money(f)} posted`, detail: "The payment is in the ledger and the evidence is signed." } : { kind: "info", title: "Payment rejected", detail: "Nothing was posted." });
       refresh();
-    } catch (e) { toast({ kind: "err", title: "Decision failed", detail: String(e) }); }
+    } catch (e) { toast({ kind: "err", title: "Decision failed", detail: errMsg(e) }); }
     setBusy("");
   };
   const t0 = events.length ? +new Date(events[0].ts) : 0;
@@ -149,6 +150,12 @@ export function InvoiceDetail() {
         {inv.status === "NEW" && !inv.queued && (
           <motion.div key="new" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ marginBottom: 16 }}>
             <Callout kind="info">This invoice hasn't been opened yet. <b style={{ color: "var(--text)" }}>Process it</b> to scan, extract and validate it inside a fresh sandbox. The sandbox is destroyed when the run ends.</Callout>
+          </motion.div>
+        )}
+        {inv.status === "ERROR" && (
+          <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ marginBottom: 16 }}>
+            <Callout kind="warn"><b style={{ color: "var(--text)" }}>Processing stopped, so the invoice is held.</b> Nothing was posted, and the sandbox was still destroyed.
+              {inv.error && <div className="err-line" style={{ marginTop: 6 }}>{String(inv.error).split("\n")[0].slice(0, 180)}</div>}</Callout>
           </motion.div>
         )}
         {inv.summary && (
@@ -238,8 +245,9 @@ export function InvoiceDetail() {
           {inv.policy?.checks && (
             <div className="panel">
               <div className="panel-h">
-                <h2>Checks</h2><span className="sub">recomputed outside the sandbox</span>
-                <span className="right"><span className={`tag ${inv.policy.checks.every((c: any) => c.passed) ? "ok" : "bad"}`}>{inv.policy.checks.filter((c: any) => c.passed).length}/{inv.policy.checks.length} pass</span></span>
+                <Ring size={44} passed={inv.policy.checks.filter((c: any) => c.passed).length} total={inv.policy.checks.length} />
+                <div><h2>Checks</h2><span className="sub">recomputed outside the sandbox</span></div>
+                <span className="right"><span className={`tag ${inv.policy.checks.every((c: any) => c.passed) ? "ok" : "bad"}`}>{inv.policy.checks.every((c: any) => c.passed) ? "all pass" : `${inv.policy.checks.filter((c: any) => !c.passed).length} failed`}</span></span>
               </div>
               <div className="panel-b" style={{ paddingTop: 6, paddingBottom: 6 }}>
                 <div className="checks">
@@ -259,6 +267,7 @@ export function InvoiceDetail() {
           <div className="panel">
             <div className="panel-h"><h2>Sandbox runs</h2><span className="sub">each one a fresh container, destroyed after</span></div>
             {runs.length === 0 && <div className="panel-b muted">None yet.</div>}
+            {runs.length > 0 && <RunTimeline runs={runs} onOpen={openRunById} />}
             {runs.map((r) => (
               <button key={r.id} className="run-row" onClick={() => openRunById(r.id)}>
                 <span className="run-k"><Cpu size={14} />{r.kind}{r.attempt > 1 ? ` #${r.attempt}` : ""}</span>
@@ -339,6 +348,12 @@ function Verdict({ inv, tone }: { inv: Invoice; tone: string }) {
 
 function BrowserEvidence({ browser, runs, onOpen }: { browser: any[]; runs: Run[]; onOpen: (id: string) => void }) {
   const [zoom, setZoom] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (!zoom) return;
+    const k = (e: KeyboardEvent) => e.key === "Escape" && setZoom(null);
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [zoom]);
   return (
     <div className="panel">
       <div className="panel-h"><Globe size={16} /><h2>Link inspection</h2><span className="sub">sandboxed browser behind an egress proxy</span></div>
@@ -374,7 +389,8 @@ function BrowserEvidence({ browser, runs, onOpen }: { browser: any[]; runs: Run[
       </div>
       <AnimatePresence>
         {zoom && (
-          <motion.div className="lightbox" onClick={() => setZoom(null)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div className="lightbox" role="dialog" aria-modal="true" aria-label="Screenshot" onClick={() => setZoom(null)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <button className="lb-close" aria-label="Close screenshot" onClick={() => setZoom(null)}><X size={18} /></button>
             <motion.img src={zoom} alt="Screenshot" initial={{ scale: 0.94 }} animate={{ scale: 1 }} transition={{ duration: 0.3, ease }} />
           </motion.div>
         )}

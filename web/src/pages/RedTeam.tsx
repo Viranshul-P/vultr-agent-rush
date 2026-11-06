@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "motion/react";
 import { Check, Circle, Loader2, Play, PlayCircle, ShieldCheck, X } from "lucide-react";
-import { api } from "../api";
+import { api, errMsg } from "../api";
 import { Callout, PageHeader, Sk, ease, useToast } from "../ui";
 
 export function RedTeam() {
@@ -12,7 +12,7 @@ export function RedTeam() {
   const [err, setErr] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    api.drills().then((d) => { setCat(d); setResults(mapLast(d.last_results || {})); }).catch((e) => setErr(String(e)));
+    api.drills().then((d) => { setCat(d); setResults(mapLast(d.last_results || {})); }).catch((e) => setErr(errMsg(e)));
   }, []);
 
   const run = async (id: string) => {
@@ -21,7 +21,7 @@ export function RedTeam() {
       const r = await api.runDrill(id);
       setResults((p) => ({ ...p, [id]: { ...r, ts: new Date().toISOString() } }));
       toast(r.passed ? { kind: "ok", title: `${id} contained`, detail: r.title } : r.passed === false ? { kind: "err", title: `${id} failed`, detail: r.actual } : { kind: "info", title: `${id} skipped`, detail: r.actual });
-    } catch (e) { setResults((p) => ({ ...p, [id]: { error: String(e) } })); toast({ kind: "err", title: `${id} couldn't run`, detail: String(e) }); }
+    } catch (e) { setResults((p) => ({ ...p, [id]: { error: errMsg(e) } })); toast({ kind: "err", title: `${id} couldn't run`, detail: errMsg(e) }); }
     setBusy(null);
   };
   const runAll = async () => {
@@ -34,7 +34,7 @@ export function RedTeam() {
       setResults(stamped);
       const p = Object.values(all).filter((r: any) => r?.passed === true).length;
       toast({ kind: p === Object.keys(all).length ? "ok" : "err", title: `${p}/${Object.keys(all).length} drills contained` });
-    } catch (e) { setErr(String(e)); }
+    } catch (e) { setErr(errMsg(e)); }
     setBusy(null);
   };
 
@@ -111,4 +111,18 @@ function mapLast(last: Record<string, any>) {
   const out: Record<string, any> = {};
   for (const k in last) out[k] = { ...(last[k].data || last[k]), ts: last[k].ts };
   return out;
+}
+
+/** Passed / total from the last recorded drill results (null while loading or if the runner is down). */
+export function useDrillScore() {
+  const [v, setV] = React.useState<{ passed: number; total: number } | null>(null);
+  React.useEffect(() => {
+    api.drills().then((d) => {
+      const last = mapLast(d.last_results || {});
+      const ids: string[] = (d.drills || []).map((x: any) => x.id);
+      if (!ids.length || !ids.some((i) => last[i])) return;
+      setV({ passed: ids.filter((i) => last[i]?.passed === true).length, total: ids.length });
+    }).catch(() => {});
+  }, []);
+  return v;
 }
