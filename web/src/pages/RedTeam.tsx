@@ -94,6 +94,7 @@ export function RedTeam() {
                     <dt>Attack</dt><dd>{d.attempt}</dd>
                     <dt>Expect</dt><dd>{d.expected}</dd>
                     {r?.actual && <><dt>Result</dt><dd className="mono" style={{ color: r.passed ? "var(--text)" : "var(--block)" }}>{r.actual}</dd></>}
+                    {r?.runs?.length > 0 && <><dt>Run</dt><dd className="mono" style={{ fontSize: 12, color: "var(--text-3)", overflowWrap: "anywhere" }}>{r.runs.map((x: any) => `${x.run_id} · container ${x.container_id} · ${x.tier}${x.killed_reason ? ` · killed: ${x.killed_reason}` : ""}`).join("  |  ")}</dd></>}
                     {r?.error && <><dt>Error</dt><dd style={{ color: "var(--block)" }}>{r.error}</dd></>}
                   </dl>
                 </div>
@@ -113,16 +114,3 @@ function mapLast(last: Record<string, any>) {
   return out;
 }
 
-/** Passed / total from the last recorded drill results (null while loading or if the runner is down). */
-export function useDrillScore() {
-  const [v, setV] = React.useState<{ passed: number; total: number } | null>(null);
-  React.useEffect(() => {
-    api.drills().then((d) => {
-      const last = mapLast(d.last_results || {});
-      const ids: string[] = (d.drills || []).map((x: any) => x.id);
-      if (!ids.length || !ids.some((i) => last[i])) return;
-      setV({ passed: ids.filter((i) => last[i]?.passed === true).length, total: ids.length });
-    }).catch(() => {});
-  }, []);
-  return v;
-}

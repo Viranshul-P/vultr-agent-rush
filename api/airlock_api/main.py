@@ -142,6 +142,10 @@ def process_one(inv_id: str, req: Request, resp: Response, airlock_ws: str | Non
     from .orchestrator import is_inflight, submit
     if inv.status in ("SCANNING", "EXTRACTING", "VALIDATING", "INSPECTING_LINKS", "DECIDING") or is_inflight(inv_id):
         raise HTTPException(409, "already processing")
+    # Only new invoices (or a retry after an error) can run. Re-running a decided invoice would reset it
+    # to AWAIT_APPROVAL, and a posted one could then be approved and paid a second time.
+    if inv.status not in ("NEW", "ERROR"):
+        raise HTTPException(409, f"invoice is already {inv.status}; only new invoices can be processed")
     submit(inv_id)
     return {"ok": True, "invoice_id": inv_id}
 
@@ -194,6 +198,8 @@ def decide(inv_id: str, body: dict, req: Request, resp: Response, airlock_ws: st
     if inv.status != "AWAIT_APPROVAL":
         raise HTTPException(409, f"invoice is {inv.status}, not awaiting approval")
     with session() as s:
+        if decision == "approve" and s.exec(select(ErpPosting).where(ErpPosting.invoice_id == inv_id)).first():
+            raise HTTPException(409, "this invoice has already been posted to the ERP")
         s.add(Approval(invoice_id=inv_id, decision=decision, note=str(body.get("note", ""))[:500]))
         inv = s.get(Invoice, inv_id)
         if decision == "approve":
