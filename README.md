@@ -7,7 +7,7 @@
 Accounts-payable teams open hundreds of untrusted invoices from strangers every day — exactly how invoice fraud and prompt-injection attacks get in. Business email compromise caused **$3.05B** in reported losses in 2025 (FBI IC3), and **76%** of organisations faced payments fraud in 2025 (AFP). As AP teams add AI agents, an invoice becomes a way to attack the agent itself. Airlock treats every invoice as hostile and does all the risky work — parsing, validating, opening links — inside throwaway sandboxes, with a human approving any payment.
 
 - **Live demo:** https://app.beyonders.duckdns.org. Open it and click **Process inbox** (no sign-up; every visitor gets their own workspace).
-- **Demo video:** _link_ · **Slides:** _link_ · **Submission kit:** [docs/submission](docs/submission/README.md)
+- **Demo video:** _link_ · **Slides:** _link_ · **Submission:** [submissions/](submissions/SUBMISSION.md)
 - **Containment moments in the video:** 1:49 (prompt injection) and 2:14 (phishing link)
 
 ---
