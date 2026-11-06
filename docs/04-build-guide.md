@@ -1,6 +1,6 @@
 # 04 · Build Guide — Airlock (Team Beyonders)
 
-> This is the engineering spec under [03-implementation-plan.md](03-implementation-plan.md). 03 says **what** and **when**; this file says **exactly how**: setup commands, contracts, schemas, prompts, rules, seed data, and a ticket for every task.
+> This is the engineering spec. It says **exactly how**: setup commands, contracts, schemas, prompts, rules, seed data, and a ticket for every task.
 > All times are IST. Owners: **A** = Agent & AI · **B** = Infra & Containment · **C** = Product & Pitch (assign names at kickoff).
 > ⚠️ = verify on Day 1 before relying on it.
 

@@ -169,7 +169,7 @@ Every model is set by an env var (`MODEL_*`), so swapping one is config only. A 
 Built during the Vultr Agent Rush hackathon (Nov 2026) with Claude Code.
 
 ## Repo layout
-`api/` control plane · `runner/` sandbox runner · `sandbox-images/` gVisor images + `airlock_checks` · `egress-proxy/` · `demo-sites/` · `seed/` · `eval/` · `web/` · `deploy/` · `docs/` plans · `handoff.md`.
+`api/` control plane · `runner/` sandbox runner · `sandbox-images/` gVisor images + `airlock_checks` · `egress-proxy/` · `demo-sites/` · `seed/` · `eval/` · `web/` · `deploy/` · `docs/` build guide and evidence · `submissions/` submission kit.
 
 ## Safety note
 All vendors, invoices and demo sites are **fictional**. IBANs are standard documentation examples. The "malicious" demo content is inert: injections are harmless hidden text, the simulated suspicious page submits nowhere, the "download" is the standard EICAR anti-virus **test** string, and the CPU loop is bounded. Pages are clearly marked **SIMULATION**.

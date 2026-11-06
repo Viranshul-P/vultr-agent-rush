@@ -1,6 +1,6 @@
 """Write the voice-over script, with each line's start and end time in the final video, from src/timeline.json.
 
-Run from the video/ folder:  python scripts/voiceover.py > ../docs/submission/voiceover-script.md
+Run from the video/ folder:  python scripts/voiceover.py > ../submissions/voiceover-script.md
 """
 import json, os
 

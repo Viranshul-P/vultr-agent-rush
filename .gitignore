@@ -39,3 +39,12 @@ Thumbs.db
 
 # Demo video (71 MB) is uploaded separately and kept out of git
 submissions/*.mp4
+
+# Internal planning, QA and handoff notes: kept locally, not published
+handoff.md
+docs/01-research.md
+docs/02-problem-statements.md
+docs/03-implementation-plan.md
+docs/05-manual-test-plan.md
+docs/qa-results-*.md
+docs/submission/
