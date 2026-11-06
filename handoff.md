@@ -1,6 +1,6 @@
 # Airlock — Handoff (Team Beyonders)
 
-> Updated 5 Nov 2026 (evening). **Live on Vultr:** https://app.beyonders.duckdns.org (real Vultr models, real gVisor sandboxes).
+> Updated 6 Nov 2026. **Development is complete**; only submission and ops items remain (see "Left to do"). **Live on Vultr:** https://app.beyonders.duckdns.org (real Vultr models, real gVisor sandboxes).
 > Submit target: **Sun 8 Nov, 21:00 IST** (earliest deadline reading: Mon 9 Nov, 03:30 IST). Budget cap: $40.
 
 Plans: [docs/01-research.md](docs/01-research.md) · [02-problem-statements.md](docs/02-problem-statements.md) · [03-implementation-plan.md](docs/03-implementation-plan.md) · [04-build-guide.md](docs/04-build-guide.md)
@@ -23,11 +23,11 @@ What changed while deploying, and what was set up on Vultr: [CHANGES.md](CHANGES
 | gVisor drills D1–D10b | **11/11 pass** on VM-2 · [docs/evidence/drills-vultr-2026-11-04.json](docs/evidence/drills-vultr-2026-11-04.json) |
 | 6 golden invoices on the live URL | **6/6 correct**, incl. approve → ERP posting → signed receipt, and phishing → EICAR download quarantined |
 | Latest live eval (40 invoices, build `d6fb6d3`, varied injections) | **40/40** correct, 22/22 attacks, 0% false positives, 0 timeouts, p50 20 s / p95 36 s, $0.0094 per invoice at real prices · [eval/results/2026-11-05-1527.json](eval/results/2026-11-05-1527.json). Earlier: 92.5% (20:53), 85% (13:10) |
-| Tests | API 72, runner 11, web build clean |
+| Tests | API 75, runner 11, web build clean |
 
 ### Run it locally (mock LLM, no Vultr)
 ```bash
-cd api && uv sync && uv run pytest -q        # 74 passed
+cd api && uv sync && uv run pytest -q        # 75 passed
 cd runner && uv sync && uv run pytest -q     # 11 passed
 cd web && npm install && npm run build       # builds clean
 ```
@@ -40,6 +40,8 @@ The full local stack command is in the README ("Run it locally").
 1b. ✅ Real model prices: `pricing.py` uses Vultr's published flat rate, $0.55 / $2.75 per 1M input / output tokens (docs page updated 26 Oct 2026). Costs are stored when each call is made, so eval files before this change used the old placeholder prices and understate cost.
 1c. ✅ Live click-through fixes (CHANGES.md §11, PR #4) and parallel "Process inbox" (§12, PR #5): one visitor's inbox ~1 min, 5 visitors at once 30/30 correct. README has models, limitations and team sections.
    **Deploying:** auto mode blocks Claude from running deploys on the VMs; it uploads the package to `~/stage/` and a teammate runs `ssh ... 'bash ~/stage/airlock-remote.sh'`. Web builds must replace the *contents* of `web/dist` (Caddy bind-mounts the directory; renaming it needs a Caddy restart).
+1d. ✅ Frontend redesign (PR #8) deployed to VM-1 on 5 Nov and verified live on 6 Nov (CHANGES.md §13): golden inbox 6/6 in 48 s, phishing screenshots served, approve → ERP → signed receipt verifies, double approve 409, all pages 200.
+   **Development is done.** Everything below is submission or ops work.
 2. **Snapshot both VMs** before recording the video, and write down how to roll back.
 3. **Submission assets:** video (4:30 with the containment moments; plan in docs/03 §11.1 and the checklist in docs/04 Part 16), 10-slide PDF, 16:9 cover image, lablab form (drafts in docs/03 §11.4). Fill in the video/slides links and the containment timestamp at the top of README.md.
 4. **Vultr billing alert** (console only).

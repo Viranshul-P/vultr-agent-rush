@@ -261,3 +261,24 @@ A cap of 3 was tried first on paper and dropped: it would have made 5 simultaneo
 Rollback point on VM-1: `~/airlock-backup-20261105-pre-parallel.tgz`, image `deploy-api:20261105-pre-parallel`.
 Tests: API 74.
 
+
+## 13. 2026-11-05/06: frontend redesign deployed and verified live (PR #8)
+
+The redesigned web app (design system, Overview page at `/`, live pipeline view, phishing screenshots on the
+invoice page) and the one backend change it needs (`GET /api/runs/{run_id}/screenshots/{name}`, which serves only
+`.png` artifacts listed on the run and checks the PNG signature) were deployed to VM-1 on 5 Nov.
+Rollback point on VM-1: `~/airlock-backup-20261105-pre-redesign.tgz`, image `deploy-api:20261105-pre-redesign`.
+
+Verified on 6 Nov against https://app.beyonders.duckdns.org as a fresh visitor (scripted, real Vultr models, gVisor):
+
+| Check | Result |
+|---|---|
+| Served build | `index-DTxV6YiH.js` / `index-CtQs46As.css`, identical to a local build of `main` |
+| Golden inbox (Process inbox) | **6/6 correct** in 48 s: 2 AWAIT_APPROVAL, 2 BLOCKED (duplicate, bank change), 2 QUARANTINED (injection, phishing link) |
+| Phishing screenshots | `landing.png` and `after-5s.png` returned as valid PNGs |
+| Approval gate | Approve → POSTED and an ERP posting; approving again → 409 |
+| Evidence receipt | sha256 and Ed25519 signature verify |
+| Pages and APIs | `/`, `/inbox`, `/red-team`, `/metrics`, `/erp`, `/about`, `/api/metrics`, `/api/drills`: all 200 |
+
+Tests on `main`: API 75, runner 11, web build clean (run locally; GitHub Actions on the merge commit failed to
+start, twice, with an unchanged workflow that had passed on the PR branch, so it's a GitHub-side issue).
